@@ -2,39 +2,29 @@ package com.xeyqe.myapplication;
 
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
-import android.content.Context;
 import android.content.Intent;
 import android.support.annotation.Nullable;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.view.View;
 import android.widget.EditText;
 
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private VocabViewModel vocabViewModel;
-    private FloatingActionButton button;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
-        button = findViewById(R.id.buChangeActivity);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                changeActivity();
-            }
-        });
+        Intent intent = getIntent();
+        String action = intent.getAction();
+        String type = intent.getType();
 
 
         RecyclerView recyclerView = findViewById(R.id.recycler_view);
@@ -42,6 +32,15 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setHasFixedSize(true);
 
         EditText editText = findViewById(R.id.edit_text);
+
+        if (Intent.ACTION_SEND.equals(action) && type != null) {
+            if ("text/plain".equals(type)) {
+                String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
+                if (sharedText != null) {
+                    editText.setText(sharedText);
+                }
+            }
+        }
 
 
         final VocabAdapter adapter = new VocabAdapter();
@@ -83,18 +82,11 @@ public class MainActivity extends AppCompatActivity {
         adapter.setOnClickListener(new VocabAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(Vocab vocab) {
-                Intent intent = new Intent(MainActivity.this, ankiApi.class);
-                intent.putExtra(ankiApi.EXTRA_WORD, vocab.getWord());
-                intent.putExtra(ankiApi.EXTRA_MEANING, vocab.getMeaning());
+                Intent intent = new Intent(MainActivity.this, ankiSend.class);
+                intent.putExtra(ankiSend.EXTRA_WORD, vocab.getWord());
+                intent.putExtra(ankiSend.EXTRA_MEANING, vocab.getMeaning());
                 startActivityForResult(intent, 1);
             }
         });
     }
-
-    public void changeActivity() {
-        Intent intent = new Intent(this, myMemory.class);
-        startActivity(intent);
-    }
-
-
 }
