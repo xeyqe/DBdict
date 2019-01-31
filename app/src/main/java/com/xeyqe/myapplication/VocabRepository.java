@@ -9,7 +9,6 @@ import java.util.List;
 public class VocabRepository {
     private VocabDao vocabDao;
     private LiveData<List<Vocab>> allVocabs;
-    private List<Vocab> allSearchedVocabs;
 
     public VocabRepository(Application application) {
         VocabDatabase database = VocabDatabase.getInstance(application);
@@ -39,11 +38,6 @@ public class VocabRepository {
     public LiveData<List<Vocab>> getAllSearchedVocabs(String hledany) {
         return vocabDao.getAllSearchedVocabs("%" + hledany + "%");
     }
-
-    /*public void getAllSearchedVocabs(String hledany) {
-        new GetAllSearchedVocabsAsyncTask(vocabDao).execute(hledany);
-    }*/
-
 
     private static class InsertVocabAsyncTask extends AsyncTask<Vocab, Void, Void> {
         private VocabDao vocabDao;
@@ -100,19 +94,4 @@ public class VocabRepository {
             return null;
         }
     }
-
-    /*private static class GetAllSearchedVocabsAsyncTask extends AsyncTask<String, Void, List<Vocab>> {
-        private VocabDao vocabDao;
-
-        private GetAllSearchedVocabsAsyncTask(VocabDao vocabDao) {
-            this.vocabDao = vocabDao;
-        }
-
-        @Override
-        protected List<Vocab> doInBackground(String... strings) {
-            return vocabDao.getAllSearchedVocabs(strings[0]);
-        }
-
-
-    }*/
 }

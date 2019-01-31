@@ -1,0 +1,605 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/af_ZA"
+        android:title="Afrikaans"/>
+
+    <item
+        android:id="@+id/sq_AL"
+        android:title="Albanian"/>
+
+    <item
+        android:id="@+id/am_ET"
+        android:title="Amharic"/>
+
+    <item
+        android:id="@+id/ar_SA"
+        android:title="Arabic"/>
+
+    <item
+        android:id="@+id/hy_AM"
+        android:title="Armenian"/>
+
+    <item
+        android:id="@+id/az_AZ"
+        android:title="Azerbaijani"/>
+
+    <item
+        android:id="@+id/bjs_BB"
+        android:title="Bajan"/>
+
+    <item
+        android:id="@+id/rm_RO"
+        android:title="Balkan Gipsy"/>
+
+    <item
+        android:id="@+id/eu_ES"
+        android:title="Basque"/>
+
+    <item
+        android:id="@+id/bem_ZM"
+        android:title="Bemba"/>
+
+    <item
+        android:id="@+id/bn_IN"
+        android:title="Bengali"/>
+
+    <item
+        android:id="@+id/be_BY"
+        android:title="Bielarus"/>
+
+    <item
+        android:id="@+id/bis_VU"
+        android:title="Bislama"/>
+
+    <item
+        android:id="@+id/bs_BA"
+        android:title="Bosnian"/>
+
+    <item
+        android:id="@+id/br_FR"
+        android:title="Breton"/>
+
+    <item
+        android:id="@+id/bg_BG"
+        android:title="Bulgarian"/>
+
+    <item
+        android:id="@+id/my_MM"
+        android:title="Burmese"/>
+
+    <item
+        android:id="@+id/ca_ES"
+        android:title="Catalan"/>
+
+    <item
+        android:id="@+id/cb_PH"
+        android:title="Cebuano"/>
+
+    <item
+        android:id="@+id/cha_GU"
+        android:title="Chamorro"/>
+
+    <item
+        android:id="@+id/zh_CN"
+        android:title="Chinese (Simplified)"/>
+
+    <item
+        android:id="@+id/zh_TW"
+        android:title="Chinese Traditional"/>
+
+    <item
+        android:id="@+id/zdj_KM"
+        android:title="Comorian (Ngazidja)"/>
+
+    <item
+        android:id="@+id/cop_EG"
+        android:title="Coptic"/>
+
+    <item
+        android:id="@+id/aig_AG"
+        android:title="Creole English (Antigua and Barbuda)"/>
+
+    <item
+        android:id="@+id/bah_BS"
+        android:title="Creole English (Bahamas)"/>
+
+    <item
+        android:id="@+id/gcl_GD"
+        android:title="Creole English (Grenadian)"/>
+
+    <item
+        android:id="@+id/gyn_GY"
+        android:title="Creole English (Guyanese)"/>
+
+    <item
+        android:id="@+id/jam_JM"
+        android:title="Creole English (Jamaican)"/>
+
+    <item
+        android:id="@+id/svc_VC"
+        android:title="Creole English (Vincentian)"/>
+
+    <item
+        android:id="@+id/vic_US"
+        android:title="Creole English (Virgin Islands)"/>
+
+    <item
+        android:id="@+id/ht_HT"
+        android:title="Creole French (Haitian)"/>
+
+    <item
+        android:id="@+id/acf_LC"
+        android:title="Creole French (Saint Lucian)"/>
+
+    <item
+        android:id="@+id/crs_SC"
+        android:title="Creole French (Seselwa)"/>
+
+    <item
+        android:id="@+id/pov_GW"
+        android:title="Creole Portuguese (Upper Guinea)"/>
+
+    <item
+        android:id="@+id/hr_HR"
+        android:title="Croatian"/>
+
+    <item
+        android:id="@+id/cs_CZ"
+        android:title="Czech"/>
+
+    <item
+        android:id="@+id/da_DK"
+        android:title="Danish"/>
+
+    <item
+        android:id="@+id/nl_NL"
+        android:title="Dutch"/>
+
+    <item
+        android:id="@+id/dzo_BT"
+        android:title="Dzongkha"/>
+
+    <item
+        android:id="@+id/en_GB"
+        android:title="English"/>
+
+    <item
+        android:id="@+id/eo_EU"
+        android:title="Esperanto"/>
+
+    <item
+        android:id="@+id/et_EE"
+        android:title="Estonian"/>
+
+    <item
+        android:id="@+id/fn_FNG"
+        android:title="Fanagalo"/>
+
+    <item
+        android:id="@+id/fo_FO"
+        android:title="Faroese"/>
+
+    <item
+        android:id="@+id/fi_FI"
+        android:title="Finnish"/>
+
+    <item
+        android:id="@+id/fr_FR"
+        android:title="French"/>
+
+    <item
+        android:id="@+id/gl_ES"
+        android:title="Galician"/>
+
+    <item
+        android:id="@+id/ka_GE"
+        android:title="Georgian"/>
+
+    <item
+        android:id="@+id/de_DE"
+        android:title="German"/>
+
+    <item
+        android:id="@+id/el_GR"
+        android:title="Greek"/>
+
+    <item
+        android:id="@+id/grc_GR"
+        android:title="Greek (Classical)"/>
+
+    <item
+        android:id="@+id/gu_IN"
+        android:title="Gujarati"/>
+
+    <item
+        android:id="@+id/ha_NE"
+        android:title="Hausa"/>
+
+    <item
+        android:id="@+id/haw_US"
+        android:title="Hawaiian"/>
+
+    <item
+        android:id="@+id/he_IL"
+        android:title="Hebrew"/>
+
+    <item
+        android:id="@+id/hi_IN"
+        android:title="Hindi"/>
+
+    <item
+        android:id="@+id/hu_HU"
+        android:title="Hungarian"/>
+
+    <item
+        android:id="@+id/is_IS"
+        android:title="Icelandic"/>
+
+    <item
+        android:id="@+id/id_ID"
+        android:title="Indonesian"/>
+
+    <item
+        android:id="@+id/kal_GL"
+        android:title="Inuktitut (Greenlandic)"/>
+
+    <item
+        android:id="@+id/ga_IE"
+        android:title="Irish Gaelic"/>
+
+    <item
+        android:id="@+id/it_IT"
+        android:title="Italian"/>
+
+    <item
+        android:id="@+id/ja_JA"
+        android:title="Japanese"/>
+
+    <item
+        android:id="@+id/jw_ID"
+        android:title="Javanese"/>
+
+    <item
+        android:id="@+id/kea_CV"
+        android:title="Kabuverdianu"/>
+
+    <item
+        android:id="@+id/kab_DZ"
+        android:title="Kabylian"/>
+
+    <item
+        android:id="@+id/ka_IN"
+        android:title="Kannada"/>
+
+    <item
+        android:id="@+id/kk_KZ"
+        android:title="Kazakh"/>
+
+    <item
+        android:id="@+id/km_KM"
+        android:title="Khmer"/>
+
+    <item
+        android:id="@+id/rw_RW"
+        android:title="Kinyarwanda"/>
+
+    <item
+        android:id="@+id/run_RN"
+        android:title="Kirundi"/>
+
+    <item
+        android:id="@+id/ko_KR"
+        android:title="Korean"/>
+
+    <item
+        android:id="@+id/ku_TR"
+        android:title="Kurdish"/>
+
+    <item
+        android:id="@+id/ky_KG"
+        android:title="Kyrgyz"/>
+
+    <item
+        android:id="@+id/lo_LA"
+        android:title="Lao"/>
+
+    <item
+        android:id="@+id/la_VA"
+        android:title="Latin"/>
+
+    <item
+        android:id="@+id/lv_LV"
+        android:title="Latvian"/>
+
+    <item
+        android:id="@+id/lt_LT"
+        android:title="Lithuanian"/>
+
+    <item
+        android:id="@+id/lb_LU"
+        android:title="Luxembourgish"/>
+
+    <item
+        android:id="@+id/mk_MK"
+        android:title="Macedonian"/>
+
+    <item
+        android:id="@+id/mg_MG"
+        android:title="Malagasy"/>
+
+    <item
+        android:id="@+id/ms_MY"
+        android:title="Malay"/>
+
+    <item
+        android:id="@+id/div_MV"
+        android:title="Maldivian"/>
+
+    <item
+        android:id="@+id/mt_MT"
+        android:title="Maltese"/>
+
+    <item
+        android:id="@+id/gv_IM"
+        android:title="Manx Gaelic"/>
+
+    <item
+        android:id="@+id/mi_NZ"
+        android:title="Maori"/>
+
+    <item
+        android:id="@+id/mh_MH"
+        android:title="Marshallese"/>
+
+    <item
+        android:id="@+id/men_SL"
+        android:title="Mende"/>
+
+    <item
+        android:id="@+id/mn_MN"
+        android:title="Mongolian"/>
+
+    <item
+        android:id="@+id/mfe_MU"
+        android:title="Morisyen"/>
+
+    <item
+        android:id="@+id/ne_NP"
+        android:title="Nepali"/>
+
+    <item
+        android:id="@+id/niu_NU"
+        android:title="Niuean"/>
+
+    <item
+        android:id="@+id/no_NO"
+        android:title="Norwegian"/>
+
+    <item
+        android:id="@+id/ny_MW"
+        android:title="Nyanja"/>
+
+    <item
+        android:id="@+id/ur_PK"
+        android:title="Pakistani"/>
+
+    <item
+        android:id="@+id/pau_PW"
+        android:title="Palauan"/>
+
+    <item
+        android:id="@+id/pa_IN"
+        android:title="Panjabi"/>
+
+    <item
+        android:id="@+id/pap_PAP"
+        android:title="Papiamentu"/>
+
+    <item
+        android:id="@+id/ps_PK"
+        android:title="Pashto"/>
+
+    <item
+        android:id="@+id/fa_IR"
+        android:title="Persian"/>
+
+    <item
+        android:id="@+id/pis_SB"
+        android:title="Pijin"/>
+
+    <item
+        android:id="@+id/pl_PL"
+        android:title="Polish"/>
+
+    <item
+        android:id="@+id/pt_PT"
+        android:title="Portuguese"/>
+
+    <item
+        android:id="@+id/pot_US"
+        android:title="Potawatomi"/>
+
+    <item
+        android:id="@+id/qu_PE"
+        android:title="Quechua"/>
+
+    <item
+        android:id="@+id/ro_RO"
+        android:title="Romanian"/>
+
+    <item
+        android:id="@+id/ru_RU"
+        android:title="Russian"/>
+
+    <item
+        android:id="@+id/smo_WS"
+        android:title="Samoan"/>
+
+    <item
+        android:id="@+id/sg_CF"
+        android:title="Sango"/>
+
+    <item
+        android:id="@+id/gd_GB"
+        android:title="Scots Gaelic"/>
+
+    <item
+        android:id="@+id/sr_RS"
+        android:title="Serbian"/>
+
+    <item
+        android:id="@+id/sna_ZW"
+        android:title="Shona"/>
+
+    <item
+        android:id="@+id/si_LK"
+        android:title="Sinhala"/>
+
+    <item
+        android:id="@+id/sk_SK"
+        android:title="Slovak"/>
+
+    <item
+        android:id="@+id/sl_SI"
+        android:title="Slovenian"/>
+
+    <item
+        android:id="@+id/so_SO"
+        android:title="Somali"/>
+
+    <item
+        android:id="@+id/nso_ZA"
+        android:title="Sotho, Southern"/>
+
+    <item
+        android:id="@+id/es_ES"
+        android:title="Spanish"/>
+
+    <item
+        android:id="@+id/srn_SR"
+        android:title="Sranan Tongo"/>
+
+    <item
+        android:id="@+id/sw_SZ"
+        android:title="Swahili"/>
+
+    <item
+        android:id="@+id/sv_SE"
+        android:title="Swedish"/>
+
+    <item
+        android:id="@+id/de_CH"
+        android:title="Swiss German"/>
+
+    <item
+        android:id="@+id/syc_TR"
+        android:title="Syriac (Aramaic)"/>
+
+    <item
+        android:id="@+id/tl_PH"
+        android:title="Tagalog"/>
+
+    <item
+        android:id="@+id/tg_TJ"
+        android:title="Tajik"/>
+
+    <item
+        android:id="@+id/tmh_DZ"
+        android:title="Tamashek (Tuareg)"/>
+
+    <item
+        android:id="@+id/ta_LK"
+        android:title="Tamil"/>
+
+    <item
+        android:id="@+id/te_IN"
+        android:title="Telugu"/>
+
+    <item
+        android:id="@+id/tet_TL"
+        android:title="Tetum"/>
+
+    <item
+        android:id="@+id/th_TH"
+        android:title="Thai"/>
+
+    <item
+        android:id="@+id/bod_CN"
+        android:title="Tibetan"/>
+
+    <item
+        android:id="@+id/ti_TI"
+        android:title="Tigrinya"/>
+
+    <item
+        android:id="@+id/tpi_PG"
+        android:title="Tok Pisin"/>
+
+    <item
+        android:id="@+id/tkl_TK"
+        android:title="Tokelauan"/>
+
+    <item
+        android:id="@+id/ton_TO"
+        android:title="Tongan"/>
+
+    <item
+        android:id="@+id/tsn_BW"
+        android:title="Tswana"/>
+
+    <item
+        android:id="@+id/tr_TR"
+        android:title="Turkish"/>
+
+    <item
+        android:id="@+id/tk_TM"
+        android:title="Turkmen"/>
+
+    <item
+        android:id="@+id/tvl_TV"
+        android:title="Tuvaluan"/>
+
+    <item
+        android:id="@+id/uk_UA"
+        android:title="Ukrainian"/>
+
+    <item
+        android:id="@+id/ppk_ID"
+        android:title="Uma"/>
+
+    <item
+        android:id="@+id/uz_UZ"
+        android:title="Uzbek"/>
+
+    <item
+        android:id="@+id/vi_VN"
+        android:title="Vietnamese"/>
+
+    <item
+        android:id="@+id/wls_WF"
+        android:title="Wallisian"/>
+
+    <item
+        android:id="@+id/cy_GB"
+        android:title="Welsh"/>
+
+    <item
+        android:id="@+id/wo_SN"
+        android:title="Wolof"/>
+
+    <item
+        android:id="@+id/xh_ZA"
+        android:title="Xhosa"/>
+
+    <item
+        android:id="@+id/yi_YD"
+        android:title="Yiddish"/>
+
+    <item
+        android:id="@+id/zu_ZA"
+        android:title="Zulu"/>
+
+
+</menu>
