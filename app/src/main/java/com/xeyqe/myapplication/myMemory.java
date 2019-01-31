@@ -1,5 +1,6 @@
 package com.xeyqe.myapplication;
 
+import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.MenuItem;
@@ -8,7 +9,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.PopupMenu;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
@@ -23,6 +23,13 @@ import org.json.JSONObject;
 import java.util.HashMap;
 
 public class myMemory extends AppCompatActivity {
+
+    public static final String SHARED_PREFS = "sharedPrefs";
+    public static final String LANGUAGE1 = "language1";
+    public static final String LANGUAGE2 = "language2";
+
+    private String language1;
+    private String language2;
 
     private EditText editText;
     private TextView textView;
@@ -199,6 +206,7 @@ public class myMemory extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 jsonParse();
+                saveData();
             }
         });
 
@@ -215,7 +223,8 @@ public class myMemory extends AppCompatActivity {
                     @Override
                     public boolean onMenuItemClick(MenuItem item) {
                         inputLanguage = map.get(item.getTitle().toString());
-                        buInputLanguage.setText(item.getTitle().toString());
+                        language1 = item.getTitle().toString();
+                        buInputLanguage.setText(language1);
                         return true;
                     }
                 });
@@ -234,7 +243,8 @@ public class myMemory extends AppCompatActivity {
                     @Override
                     public boolean onMenuItemClick(MenuItem item) {
                         outputLanguage = map.get(item.getTitle().toString());
-                        buOutputLanguage.setText(item.getTitle().toString());
+                        language2 = item.getTitle().toString();
+                        buOutputLanguage.setText(language2);
                         return true;
                     }
                 });
@@ -243,6 +253,14 @@ public class myMemory extends AppCompatActivity {
             }
         });
 
+        SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
+        language1 = sharedPreferences.getString(LANGUAGE1, "from");
+        language2 = sharedPreferences.getString(LANGUAGE2, "to");
+
+
+        buInputLanguage.setText(language1);
+        buOutputLanguage.setText(language2);
+
 
     }
 
@@ -250,7 +268,7 @@ public class myMemory extends AppCompatActivity {
 
         String userInput = editText.getText().toString();
 
-        String url = "https://api.mymemory.translated.net/get?q="+userInput+"&langpair="+inputLanguage+"|"+outputLanguage;
+        String url = "https://api.mymemory.translated.net/get?q=" + userInput + "&langpair=" + inputLanguage + "|" + outputLanguage;
 
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
                 new Response.Listener<JSONObject>() {
@@ -266,12 +284,22 @@ public class myMemory extends AppCompatActivity {
                     }
                 }, new Response.ErrorListener() {
 
-                @Override
-                public void onErrorResponse(VolleyError error) {
-                    error.printStackTrace();
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                error.printStackTrace();
             }
         });
 
         mQueue.add(request);
+    }
+
+    public void saveData() {
+        SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+
+        editor.putString(LANGUAGE1, language1);
+        editor.putString(LANGUAGE2, language2);
+
+        editor.apply();
     }
 }

@@ -36,7 +36,7 @@ public class VocabRepository {
         return allVocabs;
     }
     public LiveData<List<Vocab>> getAllSearchedVocabs(String hledany) {
-        return vocabDao.getAllSearchedVocabs("%" + hledany + "%");
+        return vocabDao.getAllSearchedVocabs(hledany + "%");
     }
 
     private static class InsertVocabAsyncTask extends AsyncTask<Vocab, Void, Void> {

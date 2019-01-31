@@ -11,19 +11,20 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
-public class VocabAdapter extends RecyclerView.Adapter<VocabAdapter.NoteHolder> {
+public class VocabAdapter extends RecyclerView.Adapter<VocabAdapter.VocabHolder> {
     private List<Vocab> vocabs = new ArrayList<>();
+    private OnItemClickListener listener;
 
     @NonNull
     @Override
-    public NoteHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public VocabHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View itemView = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.vocab_item, parent, false);
-        return new NoteHolder(itemView);
+        return new VocabHolder(itemView);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull NoteHolder holder, int position) {
+    public void onBindViewHolder(@NonNull VocabHolder holder, int position) {
         Vocab currentVocab = vocabs.get(position);
         holder.textViewWord.setText(currentVocab.getWord());
         holder.textViewMeaning.setText(Html.fromHtml(currentVocab.getMeaning()));
@@ -40,16 +41,34 @@ public class VocabAdapter extends RecyclerView.Adapter<VocabAdapter.NoteHolder> 
         notifyDataSetChanged();
     }
 
-    class NoteHolder extends RecyclerView.ViewHolder {
+    class VocabHolder extends RecyclerView.ViewHolder {
         private TextView textViewWord;
         private TextView textViewMeaning;
         private TextView textViewLanguage;
 
-        public NoteHolder(View itemView) {
+        public VocabHolder(View itemView) {
             super(itemView);
             textViewWord = itemView.findViewById(R.id.text_view_title);
             textViewMeaning = itemView.findViewById(R.id.text_view_description);
             textViewLanguage = itemView.findViewById(R.id.text_view_priority);
+
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    int position = getAdapterPosition();
+                    if (listener != null) {
+                        listener.onItemClick(vocabs.get(position));
+                    }
+                }
+            });
         }
+    }
+
+    public interface OnItemClickListener {
+        void onItemClick(Vocab vocab);
+    }
+
+    public void setOnClickListener(OnItemClickListener listener) {
+        this.listener = listener;
     }
 }

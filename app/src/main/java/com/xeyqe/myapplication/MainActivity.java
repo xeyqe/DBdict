@@ -2,6 +2,7 @@ package com.xeyqe.myapplication;
 
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
+import android.content.Context;
 import android.content.Intent;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
@@ -20,11 +21,11 @@ public class MainActivity extends AppCompatActivity {
     private VocabViewModel vocabViewModel;
     private FloatingActionButton button;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
 
 
         button = findViewById(R.id.buChangeActivity);
@@ -43,8 +44,6 @@ public class MainActivity extends AppCompatActivity {
         EditText editText = findViewById(R.id.edit_text);
 
 
-
-
         final VocabAdapter adapter = new VocabAdapter();
         recyclerView.setAdapter(adapter);
 
@@ -55,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
                 adapter.setVocabs(vocabs);
             }
         });
+
 
         editText.addTextChangedListener(new TextWatcher() {
             @Override
@@ -77,6 +77,16 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable s) {
 
+            }
+        });
+
+        adapter.setOnClickListener(new VocabAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(Vocab vocab) {
+                Intent intent = new Intent(MainActivity.this, ankiApi.class);
+                intent.putExtra(ankiApi.EXTRA_WORD, vocab.getWord());
+                intent.putExtra(ankiApi.EXTRA_MEANING, vocab.getMeaning());
+                startActivityForResult(intent, 1);
             }
         });
     }

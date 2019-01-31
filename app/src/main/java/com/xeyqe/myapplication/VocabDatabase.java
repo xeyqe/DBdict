@@ -49,7 +49,6 @@ public abstract class VocabDatabase extends RoomDatabase {
 
         @Override
         protected Void doInBackground(Void... voids) {
-            Pattern neco = Pattern.compile("^##.*");
 
             Context context = GlobalApplication.getAppContext();
             BufferedReader reader = null;
@@ -60,13 +59,10 @@ public abstract class VocabDatabase extends RoomDatabase {
 
                 String line = reader.readLine();
                 while (line != null) {
-                    if (!neco.matcher(line).matches()) {
-
-                        String[] separated = line.split("\t");
+                        String[] separated = line.split("[_]{3}");
 
                         vocabDao.insert(new Vocab(separated[0], separated[1], "eng-cze"));
                         line = reader.readLine();
-                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
