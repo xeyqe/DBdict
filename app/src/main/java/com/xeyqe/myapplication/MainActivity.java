@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.widget.EditText;
 
@@ -33,26 +34,36 @@ public class MainActivity extends AppCompatActivity {
 
         EditText editText = findViewById(R.id.edit_text);
 
-        if (Intent.ACTION_SEND.equals(action) && type != null) {
-            if ("text/plain".equals(type)) {
-                String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
-                if (sharedText != null) {
-                    editText.setText(sharedText);
-                }
-            }
-        }
-
 
         final VocabAdapter adapter = new VocabAdapter();
         recyclerView.setAdapter(adapter);
 
         vocabViewModel = ViewModelProviders.of(this).get(VocabViewModel.class);
-        vocabViewModel.getAllVocabs().observe(this, new Observer<List<Vocab>>() {
-            @Override
-            public void onChanged(@Nullable List<Vocab> vocabs) {
-                adapter.setVocabs(vocabs);
+
+        if (Intent.ACTION_SEND.equals(action) && type != null) {
+            if ("text/plain".equals(type)) {
+                String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
+                if (sharedText != null) {
+                    editText.setText(sharedText);
+                    vocabViewModel.getAllSearchedVocabs(sharedText).observe(MainActivity.this, new Observer<List<Vocab>>() {
+
+                        @Override
+                        public void onChanged(@Nullable List<Vocab> vocabs) {
+                            adapter.setVocabs(vocabs);
+                        }
+                    });
+                }
             }
-        });
+        }
+
+        if (TextUtils.isEmpty(editText.getText())) {
+            vocabViewModel.getAllVocabs().observe(this, new Observer<List<Vocab>>() {
+                @Override
+                public void onChanged(@Nullable List<Vocab> vocabs) {
+                    adapter.setVocabs(vocabs);
+                }
+            });
+        }
 
 
         editText.addTextChangedListener(new TextWatcher() {
