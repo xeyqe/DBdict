@@ -11,7 +11,8 @@ import android.support.annotation.NonNull;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.List;
 
 @Database(entities = {Vocab.class}, version = 1)
 public abstract class VocabDatabase extends RoomDatabase {
@@ -54,6 +55,8 @@ public abstract class VocabDatabase extends RoomDatabase {
             BufferedReader reader = null;
 
             try {
+                List<Vocab> vocabs2Import;
+                vocabs2Import = new ArrayList<>();
                 reader = new BufferedReader(
                         new InputStreamReader(context.getAssets().open("eng-cze.txt")));
 
@@ -61,9 +64,10 @@ public abstract class VocabDatabase extends RoomDatabase {
                 while (line != null) {
                         String[] separated = line.split("[_]{3}");
 
-                        vocabDao.insert(new Vocab(separated[0], separated[1], "eng-cze"));
+                        vocabs2Import.add(new Vocab(separated[0], separated[1], "eng-cze", false));
                         line = reader.readLine();
                 }
+                vocabDao.insertAll(vocabs2Import);
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {

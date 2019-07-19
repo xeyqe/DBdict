@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/vsjo"
+        android:title="vsjo"/>
+    <item
+        android:id="@+id/eng_cze"
+        android:title="eng-cze"/>
+    <item
+        android:id="@+id/add"
+        android:title="add"/>
+</menu>

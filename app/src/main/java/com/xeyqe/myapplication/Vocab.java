@@ -15,10 +15,13 @@ public class Vocab {
 
     private String language;
 
-    public Vocab(String word, String meaning, String language) {
+    private boolean history;
+
+    public Vocab(String word, String meaning, String language, boolean history) {
         this.word = word;
         this.meaning = meaning;
         this.language = language;
+        this.history = history;
     }
 
     public void setId(int id) {
@@ -39,5 +42,9 @@ public class Vocab {
 
     public String getLanguage() {
         return language;
+    }
+
+    public boolean getHistory() {
+        return history;
     }
 }

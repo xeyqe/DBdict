@@ -9,6 +9,7 @@ import java.util.List;
 public class VocabRepository {
     private VocabDao vocabDao;
     private LiveData<List<Vocab>> allVocabs;
+    private List<String> getAllLanguages;
 
     public VocabRepository(Application application) {
         VocabDatabase database = VocabDatabase.getInstance(application);
@@ -20,6 +21,10 @@ public class VocabRepository {
         new InsertVocabAsyncTask(vocabDao).execute(vocab);
     }
 
+    public void insertAll(List<Vocab> vocabs) {
+        new InsertAllVocabsAsyncTask(vocabDao).execute(vocabs);
+    }
+
     public void update(Vocab vocab) {
         new UpdateVocabAsyncTask(vocabDao).execute(vocab);
     }
@@ -28,8 +33,13 @@ public class VocabRepository {
         new DeleteVocabAsyncTask(vocabDao).execute(vocab);
     }
 
-    public void deleteAllVocabs() {
-        new DeleteAllVocabsAsyncTask(vocabDao).execute();
+    public void deleteAllVocabs(String language) {
+        new DeleteAllVocabsAsyncTask(vocabDao).execute(language);
+    }
+
+    public List<String> getAllLanguages() {
+        new GetAllLanguagesAsyncTask(vocabDao).execute();
+        return getAllLanguages;
     }
 
     public LiveData<List<Vocab>> getAllVocabs() {
@@ -37,6 +47,9 @@ public class VocabRepository {
     }
     public LiveData<List<Vocab>> getAllSearchedVocabs(String hledany) {
         return vocabDao.getAllSearchedVocabs(hledany + "%");
+    }
+    public LiveData<List<Vocab>> getSearchedVocabs(String hledany, String language) {
+        return vocabDao.getSearchedVocabs(hledany + "%", language);
     }
 
     private static class InsertVocabAsyncTask extends AsyncTask<Vocab, Void, Void> {
@@ -49,6 +62,41 @@ public class VocabRepository {
         @Override
         protected Void doInBackground(Vocab... vocabs) {
             vocabDao.insert(vocabs[0]);
+            return null;
+        }
+    }
+
+    private class GetAllLanguagesAsyncTask extends AsyncTask<Void, Void, List<String>> {
+        private VocabDao vocabDao;
+
+        private GetAllLanguagesAsyncTask(VocabDao vocabDao) {
+            this.vocabDao = vocabDao;
+        }
+
+        @Override
+        protected List<String> doInBackground(Void... voids) {
+            return vocabDao.getAllLanguages();
+
+        }
+
+        @Override
+        protected void onPostExecute(List<String> strings) {
+            super.onPostExecute(strings);
+            getAllLanguages = strings;
+
+        }
+    }
+
+    private static class InsertAllVocabsAsyncTask extends AsyncTask<List<Vocab>, Void, Void> {
+        private VocabDao vocabDao;
+
+        private InsertAllVocabsAsyncTask(VocabDao vocabDao) {
+            this.vocabDao = vocabDao;
+        }
+
+        @Override
+        protected Void doInBackground(List<Vocab>... vocabs) {
+            vocabDao.insertAll(vocabs[0]);
             return null;
         }
     }
@@ -81,7 +129,7 @@ public class VocabRepository {
         }
     }
 
-    private static class DeleteAllVocabsAsyncTask extends AsyncTask<Void, Void, Void> {
+    private static class DeleteAllVocabsAsyncTask extends AsyncTask<String, Void, Void> {
         private VocabDao vocabDao;
 
         private DeleteAllVocabsAsyncTask(VocabDao vocabDao) {
@@ -89,8 +137,8 @@ public class VocabRepository {
         }
 
         @Override
-        protected Void doInBackground(Void... voids) {
-            vocabDao.deleteAllVocabs();
+        protected Void doInBackground(String... language) {
+            vocabDao.deleteAllVocabs(language[0]);
             return null;
         }
     }
