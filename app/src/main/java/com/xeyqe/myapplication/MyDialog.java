@@ -50,7 +50,6 @@ public class MyDialog extends AppCompatDialogFragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-
         try {
             listener = (MyDialogListener) context;
         } catch (ClassCastException e) {

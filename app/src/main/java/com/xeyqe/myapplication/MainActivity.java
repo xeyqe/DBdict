@@ -17,6 +17,7 @@ import android.support.v7.widget.helper.ItemTouchHelper;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -31,12 +32,14 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class MainActivity extends AppCompatActivity implements MyDialog.MyDialogListener {
     private VocabViewModel vocabViewModel;
     private final VocabAdapter adapter = new VocabAdapter();
     private static final int READ_REQUEST_CODE = 42;
     public static String mLng = "germanstina";
     private String language2Delete;
+    private static final String TAG = "RAMadama";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,14 +66,15 @@ public class MainActivity extends AppCompatActivity implements MyDialog.MyDialog
                 String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
                 if (sharedText != null) {
                     editText.setText(sharedText);
-                    database(sharedText);
+                    //database(sharedText);
                 }
             }
         }
 
-        if (TextUtils.isEmpty(editText.getText())) {
+        if (editText.getText().toString().trim().length() == 0) {
             database();
         }
+
 
 
         editText.addTextChangedListener(new TextWatcher() {
@@ -81,12 +85,11 @@ public class MainActivity extends AppCompatActivity implements MyDialog.MyDialog
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-
             }
 
             @Override
             public void afterTextChanged(Editable s) {
-                if (TextUtils.isEmpty(editText.getText())) {
+                if (s.toString().trim().length() == 0) {
                     database();
                 } else {
                     String language = buLanguage.getText().toString();
@@ -147,7 +150,7 @@ public class MainActivity extends AppCompatActivity implements MyDialog.MyDialog
                             openDialog();
                         } else {
                             buLanguage.setText(language);
-                            if (TextUtils.isEmpty(editText.getText())) {
+                            if (editText.getText().toString().trim().length() == 0) {
                                 database();
                             } else {
                                 database(editText.getText().toString(), language);
@@ -212,6 +215,7 @@ public class MainActivity extends AppCompatActivity implements MyDialog.MyDialog
         }).attachToRecyclerView(recyclerView);
     }
 
+
     @Override
     public void performFileSearch() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -260,7 +264,7 @@ public class MainActivity extends AppCompatActivity implements MyDialog.MyDialog
             while (line != null) {
                 if (!line.startsWith("##")) {
                     String[] separated = line.split("\t");
-                    listOfVocabs.add(new Vocab(separated[0], separated[1], mLng, false));
+                    listOfVocabs.add(new Vocab(separated[0], separated[1].replaceAll("\\\\n","<br>"), mLng, false));
                 }
                 line = reader.readLine();
             }
