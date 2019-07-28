@@ -174,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onLongClick(View v) {
                 language2Delete = buLanguage.getText().toString();
-                if (language2Delete.equals("vsjo")) {
+                if (!language2Delete.equals("vsjo")) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
 
                     builder.setMessage("Do you want to delete " + language2Delete + " dictionary?")
