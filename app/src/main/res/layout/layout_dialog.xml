@@ -9,7 +9,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:padding="15dp"
-        android:text="Write languages of dictionary (smth like eng-cze)."/>
+        android:text="Write name of dictionary (e.g. eng-cze)."/>
     <EditText
         android:id="@+id/edit_view_lang"
         android:layout_width="match_parent"

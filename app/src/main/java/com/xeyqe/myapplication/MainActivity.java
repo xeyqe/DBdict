@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
+
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
@@ -21,6 +23,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.PopupMenu;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -31,13 +34,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class MainActivity extends AppCompatActivity implements MyDialog.MyDialogListener {
+public class MainActivity extends AppCompatActivity {
     private VocabViewModel vocabViewModel;
     private final VocabAdapter adapter = new VocabAdapter();
     private static final int READ_REQUEST_CODE = 42;
     public static String mLng = "germanstina";
     private String language2Delete;
     private static final String TAG = "RAMadama";
+    private EditText languages;
+    private Uri uri;
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,8 +69,8 @@ public class MainActivity extends AppCompatActivity implements MyDialog.MyDialog
             if ("text/plain".equals(type)) {
                 String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
                 if (sharedText != null) {
-                    editText.setText(sharedText);
-                    //database(sharedText);
+                    editText.setText(sharedText.trim());
+                    database(sharedText.trim());
                 }
             }
         }
@@ -143,9 +149,10 @@ public class MainActivity extends AppCompatActivity implements MyDialog.MyDialog
                         String language = item.getTitle().toString();
                         if (language.equals("add")) {
                             DictionaryImport.checkPermission(MainActivity.this);
-                            MyDialog myDialog = new MyDialog();
-                            myDialog.show(getSupportFragmentManager(), "my dialog");
-                            openDialog();
+
+                            performFileSearch();
+
+
                         } else {
                             buLanguage.setText(language);
                             if (editText.getText().toString().trim().length() == 0) {
@@ -167,7 +174,7 @@ public class MainActivity extends AppCompatActivity implements MyDialog.MyDialog
             @Override
             public boolean onLongClick(View v) {
                 language2Delete = buLanguage.getText().toString();
-                if (language2Delete != "vjso") {
+                if (language2Delete.equals("vsjo")) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
 
                     builder.setMessage("Do you want to delete " + language2Delete + " dictionary?")
@@ -214,7 +221,6 @@ public class MainActivity extends AppCompatActivity implements MyDialog.MyDialog
     }
 
 
-    @Override
     public void performFileSearch() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -226,23 +232,41 @@ public class MainActivity extends AppCompatActivity implements MyDialog.MyDialog
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == READ_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             if (data != null) {
-                Uri uri = data.getData();
+                uri = data.getData();
+                //path = data.getData().getPath();
 
-                readTextFile(uri);
+                final AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
+                View mView = getLayoutInflater().inflate(R.layout.layout_dialog, null);
+                languages = mView.findViewById(R.id.edit_view_lang);
+                dialog.setView(mView)
+                        .setTitle("Languages")
+                        .setNegativeButton("cancel", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        })
+                        .setPositiveButton("ok", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                                String language = languages.getText().toString();
+
+                                mLng = language;
+                                readTextFile(uri);
+
+                            }
+                        });
+                dialog.show();
+                String path = uri.getPath();
+                String filename = path.substring(path.lastIndexOf("/")+1);
+                if (filename.indexOf(".") > 0)
+                    filename = filename.substring(0, filename.lastIndexOf("."));
+                languages.setText(filename);
+
+
             }
         }
-    }
-
-    public void openDialog() {
-        MyDialog exampleDialog = new MyDialog();
-        exampleDialog.show(getSupportFragmentManager(), "example dialog");
-    }
-
-
-
-    @Override
-    public void applyTexts(String lng) {
-        mLng = lng;
     }
 
     public void readTextFile(Uri uri) {
@@ -258,15 +282,29 @@ public class MainActivity extends AppCompatActivity implements MyDialog.MyDialog
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
 
         try {
+            progressDialog=new ProgressDialog(MainActivity.this);
+            progressDialog.setMessage("wait till dictionary inserted");
+            progressDialog.setCancelable(false);
+            progressDialog.setInverseBackgroundForced(false);
+            progressDialog.show();
+
             String line = reader.readLine();
             while (line != null) {
-                if (!line.startsWith("##")) {
+                if (!line.startsWith("##") && line.contains("\t")) {
                     String[] separated = line.split("\t");
-                    listOfVocabs.add(new Vocab(separated[0], separated[1].replaceAll("\\\\n","<br>"), mLng, false));
+                    if (separated.length == 2)
+                        listOfVocabs.add(new Vocab(separated[0], separated[1]
+                                .replaceAll("\\\\n", "<br>"), mLng, false));
+
                 }
                 line = reader.readLine();
             }
-            vocabViewModel.insertAll(listOfVocabs);
+            if (listOfVocabs.size() == 0)
+                Toast.makeText(this, "Wrong input. I want word and meaning divided by tab.",
+                        Toast.LENGTH_LONG).show();
+            else
+                vocabViewModel.insertAll(listOfVocabs);
+            progressDialog.dismiss();
 
         } catch (IOException e) {
             e.printStackTrace();
