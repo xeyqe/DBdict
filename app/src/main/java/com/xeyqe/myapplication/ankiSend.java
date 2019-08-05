@@ -1,15 +1,12 @@
 package com.xeyqe.myapplication;
 
-import android.Manifest;
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.os.Build;
-import androidx.core.app.ActivityCompat;
+
+import androidx.annotation.NonNull;
 import androidx.core.app.ShareCompat;
-import androidx.core.content.ContextCompat;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Environment;
@@ -37,9 +34,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.ichi2.anki.api.AddContentApi.READ_WRITE_PERMISSION;
-
-
 public class ankiSend extends AppCompatActivity {
     public static final String EXTRA_WORD = "com.xeyqe.myapplication.EXTRA_WORD";
     public static final String EXTRA_MEANING = "com.xeyqe.myapplication.EXTRA_MEANING";
@@ -50,8 +44,6 @@ public class ankiSend extends AppCompatActivity {
     public static final String TTS_LOCALE = "ttsLocale";
     public static final String TTS_VOICE = "ttsVoice";
     public static final String ANKI_DECK = "ankiDeck";
-
-    private static final int AD_PERM_REQUEST = 0;
 
     private String loadedEngine;
     private String loadedLocale;
@@ -86,14 +78,6 @@ public class ankiSend extends AppCompatActivity {
     private boolean canLoadVoice;
     private boolean canLoadDeck;
 
-
-
-    private static final int REQUEST_EXTERNAL_STORAGE = 1;
-    private static String[] PERMISSIONS_STORAGE = {
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
-    };
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -114,7 +98,7 @@ public class ankiSend extends AppCompatActivity {
         spinnerVoice = findViewById(R.id.spinnerVoice);
         spinnerDeck = findViewById(R.id.spinnerDeck);
 
-        map = new HashMap<String, Voice>();
+        map = new HashMap<>();
 
         Intent intent = getIntent();
 
@@ -137,65 +121,12 @@ public class ankiSend extends AppCompatActivity {
             }
         });
 
-        if (isApiAvailable(ankiSend.this)) {
-            if (shouldRequestPermission()) {
-                requestPermission(ankiSend.this, AD_PERM_REQUEST);
-            }
-
-            if (!shouldRequestPermission()) {
-                spinnerDeck.setEnabled(true);
-                spinnerDeckFill();
-            }
-        }
-
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                String word = editTextFront.getText().toString();
-                Pattern pattern = Pattern.compile("\\[sound:(.*?)\\]");
-                Matcher matcher = pattern.matcher(word);
-                if (matcher.find())
-                {
-                    try {
-                        String path = getCollectionPath();
-                        String text = word.replaceAll(" \\[sound:.*\\.wav\\]", "");
-
-                        file = new File(path+matcher.group(1));
-                        if (verifyStoragePermissions(ankiSend.this)) {
-
-                            file.createNewFile();
-                            if (file.exists()) {
-                                mTTS.synthesizeToFile(text, null, new File(path + matcher.group(1)), null);
-                            }
-                        } else
-                            editTextFront.setText(text);
-                    } catch (IOException e){
-                        Log.e("NWFILE", e.toString());
-                    }
-                }
-
-                if (isApiAvailable(ankiSend.this) && !shouldRequestPermission()) {
-                    long deckId = getIdOfDeck() != null ? getIdOfDeck() :
-                            api.addNewDeck(spinnerDeck.getSelectedItem().toString());
-                    long modelId = getIdOfBasic() != null ? getIdOfBasic() :
-                            api.addNewBasicModel("basic");
-                    Long err = api.addNote(modelId, deckId, new String[] {word, meaning}, null);
-                    if (err != null)
-                        Toast.makeText(ankiSend.this, "Successufuly added", Toast.LENGTH_LONG).show();
-                    else
-                        Toast.makeText(ankiSend.this, "error", Toast.LENGTH_LONG).show();
-                } else {
-                    Intent shareIntent = ShareCompat.IntentBuilder.from(ankiSend.this)
-                            .setType("text/plain")
-                            .setSubject(word)
-                            .setText(meaning)
-                            .getIntent();
-                    if (shareIntent.resolveActivity(ankiSend.this.getPackageManager()) != null) {
-                        ankiSend.this.startActivity(shareIntent);
-                    }
-                }
-
+                createMediaFile();
+                sendNote();
                 saveSharedPreferences();
             }
         });
@@ -203,8 +134,7 @@ public class ankiSend extends AppCompatActivity {
         buTTS.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (verifyStoragePermissions(ankiSend.this))
-                    speak();
+                speak();
             }
         });
 
@@ -218,7 +148,14 @@ public class ankiSend extends AppCompatActivity {
             }
         });
 
+        permissionChecker.checkAnkiApiPermission(ankiSend.this);
+        if (permissionChecker.doIHaveAnkiApiPermission(ankiSend.this)) {
+            spinnerDeck.setEnabled(true);
+            spinnerDeckFill();
+        }
+
         loadSharedPreferences();
+
     }
 
     private void spinnerDeckFill() {
@@ -269,6 +206,31 @@ public class ankiSend extends AppCompatActivity {
         }, ttsEngine);
     }
 
+    private void createMediaFile() {
+        String word = editTextFront.getText().toString();
+        Pattern pattern = Pattern.compile("\\[sound:(.*?)\\]");
+        Matcher matcher = pattern.matcher(word);
+        if (matcher.find())
+        {
+            try {
+                String path = getCollectionPath();
+                String text = word.replaceAll(" \\[sound:.*\\.wav\\]", "");
+
+                file = new File(path+matcher.group(1));
+                if (permissionChecker.doIHaveWritePermission(ankiSend.this)) {
+
+                    file.createNewFile();
+                    if (file.exists()) {
+                        mTTS.synthesizeToFile(text, null, new File(path + matcher.group(1)), null);
+                    }
+                } else
+                    editTextFront.setText(text);
+            } catch (IOException e){
+                Log.e("NWFILE", e.toString());
+            }
+        }
+    }
+
     private void spinnerEngineFill() {
         List<String> engines = new ArrayList<>();
         for (TextToSpeech.EngineInfo name : mTTS.getEngines()) {
@@ -305,8 +267,6 @@ public class ankiSend extends AppCompatActivity {
 
         for (Voice voice : mTTS.getVoices()) {
             if (!voice.getFeatures().contains("notInstalled") && !voice.isNetworkConnectionRequired()) {
-            //if (!voice.isNetworkConnectionRequired()) {
-                //voices.add(voice.getName());
                 String locale = voice.getLocale().toString();
                 if (!locales.contains(locale))
                     locales.add(locale);
@@ -378,11 +338,37 @@ public class ankiSend extends AppCompatActivity {
     }
 
     private void speak() {
-        String text = editTextFront.getText().toString().replaceAll(" \\[sound:.*\\]", "");
-        String filename = text.replaceAll(" ", "_") + ".wav";
+        if (permissionChecker.doIHaveWritePermission(ankiSend.this)) {
+            String text = editTextFront.getText().toString().replaceAll(" \\[sound:.*\\]", "");
+            String filename = text.replaceAll(" ", "_") + ".wav";
 
-        mTTS.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
-        editTextFront.setText(text + " [sound:"+ mTTS.getVoice().getName() + "_" + filename+"]");
+            mTTS.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+            editTextFront.setText(text + " [sound:" + mTTS.getVoice().getName() + "_" + filename + "]");
+        }
+    }
+
+    private void sendNote() {
+        String word = editTextFront.getText().toString();
+        if (permissionChecker.doIHaveAnkiApiPermission(ankiSend.this)) {
+            long deckId = getIdOfDeck() != null ? getIdOfDeck() :
+                    api.addNewDeck(spinnerDeck.getSelectedItem().toString());
+            long modelId = getIdOfBasic() != null ? getIdOfBasic() :
+                    api.addNewBasicModel("basic");
+            Long err = api.addNote(modelId, deckId, new String[] {word, meaning}, null);
+            if (err != null)
+                Toast.makeText(ankiSend.this, "Successufuly added", Toast.LENGTH_LONG).show();
+            else
+                Toast.makeText(ankiSend.this, "error", Toast.LENGTH_LONG).show();
+        } else {
+            Intent shareIntent = ShareCompat.IntentBuilder.from(ankiSend.this)
+                    .setType("text/plain")
+                    .setSubject(word)
+                    .setText(meaning)
+                    .getIntent();
+            if (shareIntent.resolveActivity(ankiSend.this.getPackageManager()) != null) {
+                ankiSend.this.startActivity(shareIntent);
+            }
+        }
     }
 
     private void loadSharedPreferences() {
@@ -403,20 +389,6 @@ public class ankiSend extends AppCompatActivity {
         editor.putString(lang+ANKI_DECK, spinnerDeck.getSelectedItem().toString());
 
         editor.apply();
-    }
-
-    public static boolean verifyStoragePermissions(Activity activity) {
-        int permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-
-        if (permission != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(
-                    activity,
-                    PERMISSIONS_STORAGE,
-                    REQUEST_EXTERNAL_STORAGE
-            );
-        }
-        return ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE) ==
-                PackageManager.PERMISSION_GRANTED;
     }
 
     private Long getIdOfBasic() {
@@ -442,21 +414,6 @@ public class ankiSend extends AppCompatActivity {
         return null;
     }
 
-    public static boolean isApiAvailable(Context context) {
-        return AddContentApi.getAnkiDroidPackageName(context) != null;
-    }
-
-    public boolean shouldRequestPermission() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            return false;
-        }
-        return ContextCompat.checkSelfPermission(this, READ_WRITE_PERMISSION) != PackageManager.PERMISSION_GRANTED;
-    }
-
-    public void requestPermission(Activity callbackActivity, int callbackCode) {
-        ActivityCompat.requestPermissions(callbackActivity, new String[]{READ_WRITE_PERMISSION}, callbackCode);
-    }
-
     public static String getCollectionPath() {
         return new File(getDefaultAnkiDroidDirectory(), "collection.anki2").getParent() +
                 File.separator + "collection.media" + File.separator;
@@ -466,4 +423,16 @@ public class ankiSend extends AppCompatActivity {
         return new File(Environment.getExternalStorageDirectory(), "AnkiDroid").getAbsolutePath();
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == 0)  {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                spinnerDeck.setEnabled(true);
+                spinnerDeckFill();
+
+            } else {
+                Toast.makeText(this, "Permission DENIED", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
 }

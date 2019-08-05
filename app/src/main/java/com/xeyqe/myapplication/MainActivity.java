@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
                     public boolean onMenuItemClick(MenuItem item) {
                         String language = item.getTitle().toString();
                         if (language.equals("add")) {
-                            DictionaryImport.checkPermission(MainActivity.this);
+                            permissionChecker.checkReadPermission(MainActivity.this);
                             performFileSearch();
                         } else {
                             buLanguage.setText(language);
