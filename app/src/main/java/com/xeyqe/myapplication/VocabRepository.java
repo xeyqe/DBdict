@@ -1,20 +1,20 @@
 package com.xeyqe.myapplication;
 
 import android.app.Application;
-import androidx.lifecycle.LiveData;
 import android.os.AsyncTask;
+
+import androidx.lifecycle.LiveData;
 
 import java.util.List;
 
 public class VocabRepository {
     private VocabDao vocabDao;
-    private LiveData<List<Vocab>> allVocabs;
-    private List<String> getAllLanguages;
+    private LiveData<List<String>> getAllLanguages;
 
     public VocabRepository(Application application) {
         VocabDatabase database = VocabDatabase.getInstance(application);
         vocabDao = database.vocabDao();
-        allVocabs = vocabDao.getAllVocabs();
+        getAllLanguages = vocabDao.getAllLanguages();
     }
 
     public void insert(Vocab vocab) {
@@ -37,19 +37,60 @@ public class VocabRepository {
         new DeleteAllVocabsAsyncTask(vocabDao).execute(language);
     }
 
-    public List<String> getAllLanguages() {
+    /*public List<String> getAllLanguages() {
         new GetAllLanguagesAsyncTask(vocabDao).execute();
+        return getAllLanguages;
+    }*/
+    public LiveData<List<String>> getAllLanguages() {
         return getAllLanguages;
     }
 
-    public LiveData<List<Vocab>> getAllVocabs() {
-        return allVocabs;
+
+
+    public void getAllSearchedVocabs(String search, String language) {
+        new GetSearchedVocabsAsyncTask(vocabDao).execute(search, language);
     }
-    public LiveData<List<Vocab>> getAllSearchedVocabs(String hledany) {
-        return vocabDao.getAllSearchedVocabs(hledany + "%");
+
+    public void getAllVocabs() {
+        new GetAllVocabsAsyncTask(vocabDao).execute();
     }
-    public LiveData<List<Vocab>> getSearchedVocabs(String hledany, String language) {
-        return vocabDao.getSearchedVocabs(hledany + "%", language);
+
+    private static class GetAllVocabsAsyncTask extends AsyncTask<Void, Void, List<Vocab>> {
+        private VocabDao vocabDao;
+
+        private GetAllVocabsAsyncTask(VocabDao vocabDao) {
+            this.vocabDao = vocabDao;
+        }
+
+        @Override
+        protected List<Vocab> doInBackground(Void... voids) {
+            return vocabDao.getAllVocabs();
+        }
+
+        @Override
+        protected void onPostExecute(List<Vocab> vocabs) {
+            super.onPostExecute(vocabs);
+            MainActivity.updateAdapter(vocabs);
+        }
+    }
+
+    private static class GetSearchedVocabsAsyncTask extends AsyncTask<String, Void, List<Vocab>> {
+        private VocabDao vocabDao;
+
+        private GetSearchedVocabsAsyncTask(VocabDao vocabDao) {
+            this.vocabDao = vocabDao;
+        }
+
+        @Override
+        protected List<Vocab> doInBackground(String... strings) {
+            return vocabDao.getSearchedVocabs(strings[0],strings[1]);
+        }
+
+        @Override
+        protected void onPostExecute(List<Vocab> vocabs) {
+            super.onPostExecute(vocabs);
+            MainActivity.updateAdapter(vocabs);
+        }
     }
 
     private static class InsertVocabAsyncTask extends AsyncTask<Vocab, Void, Void> {
@@ -66,7 +107,7 @@ public class VocabRepository {
         }
     }
 
-    private class GetAllLanguagesAsyncTask extends AsyncTask<Void, Void, List<String>> {
+    /*private class GetAllLanguagesAsyncTask extends AsyncTask<Void, Void, List<String>> {
         private VocabDao vocabDao;
 
         private GetAllLanguagesAsyncTask(VocabDao vocabDao) {
@@ -85,7 +126,7 @@ public class VocabRepository {
             getAllLanguages = strings;
 
         }
-    }
+    }*/
 
     private static class InsertAllVocabsAsyncTask extends AsyncTask<List<Vocab>, Void, Void> {
         private VocabDao vocabDao;

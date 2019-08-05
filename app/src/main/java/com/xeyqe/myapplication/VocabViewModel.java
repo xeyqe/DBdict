@@ -9,14 +9,13 @@ import java.util.List;
 
 public class VocabViewModel extends AndroidViewModel {
     private VocabRepository repository;
-    private LiveData<List<Vocab>> allVocabs;
-    private List<String> getAllLanguages;
+    private List<Vocab> allVocabs;
+    private LiveData<List<String>> getAllLanguages;
 
     public VocabViewModel(@NonNull Application application) {
         super(application);
         repository = new VocabRepository(application);
-        allVocabs = repository.getAllVocabs();
-        getAllLanguages = repository.getAllLanguages();
+        //allVocabs = repository.getAllVocabs();
     }
 
     public void insert(Vocab vocab) {
@@ -39,17 +38,18 @@ public class VocabViewModel extends AndroidViewModel {
         repository.deleteAllVocabs(language);
     }
 
-    public LiveData<List<Vocab>> getAllVocabs() {
-        return allVocabs;
+    public void getAllVocabs() {
+        //return allVocabs;
+        repository.getAllVocabs();
     }
-    public LiveData<List<Vocab>> getAllSearchedVocabs(String hledany) {
-        return repository.getAllSearchedVocabs(hledany);
+    public void getAllSearchedVocabs(String hledany,String language) {
+        repository.getAllSearchedVocabs(hledany, language);
     }
-    public LiveData<List<Vocab>> getSearchedVocabs(String hledany, String language) {
-        return repository.getSearchedVocabs(hledany, language);
-    }
+    /*public List<Vocab> getSearchedVocabs(String hledany, String language) {
+        return repository.getAllSearchedVocabs(hledany, language);
+    }*/
 
-    public List<String> getGetAllLanguages() {
+    public LiveData<List<String>> getGetAllLanguages() {
         return repository.getAllLanguages();
     }
 }

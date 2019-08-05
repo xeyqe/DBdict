@@ -24,7 +24,7 @@ import java.util.HashMap;
 
 public class myMemory extends AppCompatActivity {
 
-    public static final String SHARED_PREFS = "sharedPrefs";
+    /*public static final String SHARED_PREFS = "sharedPref";
     public static final String LANGUAGE1 = "language1";
     public static final String LANGUAGE2 = "language2";
 
@@ -301,5 +301,5 @@ public class myMemory extends AppCompatActivity {
         editor.putString(LANGUAGE2, language2);
 
         editor.apply();
-    }
+    }*/
 }

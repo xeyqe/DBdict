@@ -28,14 +28,14 @@ public interface VocabDao {
     void deleteAllVocabs(String language);
 
     @Query("SELECT * FROM vocab_table WHERE history = 1 ORDER BY word COLLATE NOCASE ASC")
-    LiveData<List<Vocab>> getAllVocabs();
+    List<Vocab> getAllVocabs();
 
     @Query("SELECT * FROM vocab_table WHERE word LIKE :hledany ORDER BY word COLLATE NOCASE ASC")
     LiveData<List<Vocab>> getAllSearchedVocabs(String hledany);
 
-    @Query("SELECT * FROM vocab_table WHERE language = :language AND word LIKE :hledany ORDER BY word COLLATE NOCASE ASC")
-    LiveData<List<Vocab>> getSearchedVocabs(String hledany, String language);
+    @Query("SELECT * FROM vocab_table WHERE language LIKE :language AND word LIKE :hledany ORDER BY word COLLATE NOCASE ASC")
+    List<Vocab> getSearchedVocabs(String hledany, String language);
 
     @Query("SELECT DISTINCT language as lang FROM vocab_table")
-    List<String> getAllLanguages();
+    LiveData<List<String>> getAllLanguages();
 }

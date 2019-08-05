@@ -36,7 +36,7 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private VocabViewModel vocabViewModel;
-    private final VocabAdapter adapter = new VocabAdapter();
+    private static final VocabAdapter adapter = new VocabAdapter();
     private static final int READ_REQUEST_CODE = 42;
     public static String mLng = "germanstina";
     private String language2Delete;
@@ -44,6 +44,8 @@ public class MainActivity extends AppCompatActivity {
     private EditText languages;
     private Uri uri;
     private ProgressDialog progressDialog;
+    private List<Vocab> listOfVocabs;
+    private PopupMenu popupMenu3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,8 +57,6 @@ public class MainActivity extends AppCompatActivity {
         String type = intent.getType();
         final Button buLanguage = findViewById(R.id.buLanguage);
 
-
-
         RecyclerView recyclerView = findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setHasFixedSize(true);
@@ -65,21 +65,35 @@ public class MainActivity extends AppCompatActivity {
 
         recyclerView.setAdapter(adapter);
 
+        popupMenu3 = new PopupMenu(MainActivity.this, buLanguage);
+        vocabViewModel = ViewModelProviders.of(this).get(VocabViewModel.class);
+        vocabViewModel.getGetAllLanguages().observe(this, new Observer<List<String>>() {
+            @Override
+            public void onChanged(List<String> strings) {
+                popupMenu3.getMenu().clear();
+                popupMenu3.getMenu().add(0, 0,0,"vsjo");
+
+                for (int i=1; i<strings.size()+1; i++) {
+                    popupMenu3.getMenu().add(0, i,0,strings.get(i-1));
+                }
+
+                popupMenu3.getMenu().add(0, strings.size()+1,0,"add");
+            }
+        });
+
         if (Intent.ACTION_SEND.equals(action) && type != null) {
             if ("text/plain".equals(type)) {
                 String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
                 if (sharedText != null) {
                     editText.setText(sharedText.trim());
-                    database(sharedText.trim());
                 }
             }
         }
 
         if (editText.getText().toString().trim().length() == 0) {
             database();
-        }
-
-
+        } else
+            database(editText.getText().toString(),buLanguage.getText().toString());
 
         editText.addTextChangedListener(new TextWatcher() {
             @Override
@@ -97,12 +111,8 @@ public class MainActivity extends AppCompatActivity {
                     database();
                 } else {
                     String language = buLanguage.getText().toString();
-                    if (language.equals("vsjo"))
-                        database(s.toString());
-                    else
-                        database(s.toString(), language);
+                    database(s.toString(), language);
                 }
-
             }
         });
 
@@ -112,6 +122,7 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent(MainActivity.this, ankiSend.class);
                 intent.putExtra(ankiSend.EXTRA_WORD, vocab.getWord());
                 intent.putExtra(ankiSend.EXTRA_MEANING, vocab.getMeaning());
+                intent.putExtra(ankiSend.EXTRA_LANGUAGE, vocab.getLanguage());
 
                 if (vocab.getHistory() == false) {
                     String word = vocab.getWord();
@@ -123,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
                     vocabViewModel.update(vocabUpdated);
                 }
 
-                startActivityForResult(intent, 1);
+                MainActivity.this.startActivityForResult(intent, 1);
             }
         });
 
@@ -131,17 +142,6 @@ public class MainActivity extends AppCompatActivity {
         buLanguage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                PopupMenu popupMenu3 = new PopupMenu(MainActivity.this, buLanguage);
-                List list = vocabViewModel.getGetAllLanguages();
-
-                popupMenu3.getMenu().add(0, 0,0,"vsjo");
-
-                for (int i=1; i<list.size()+1; i++) {
-                    popupMenu3.getMenu().add(0, i,0,list.get(i-1).toString());
-                }
-
-                popupMenu3.getMenu().add(0, list.size()+1,0,"add");
-
 
                 popupMenu3.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                     @Override
@@ -149,10 +149,7 @@ public class MainActivity extends AppCompatActivity {
                         String language = item.getTitle().toString();
                         if (language.equals("add")) {
                             DictionaryImport.checkPermission(MainActivity.this);
-
                             performFileSearch();
-
-
                         } else {
                             buLanguage.setText(language);
                             if (editText.getText().toString().trim().length() == 0) {
@@ -164,8 +161,6 @@ public class MainActivity extends AppCompatActivity {
                         return true;
                     }
                 });
-
-
                 popupMenu3.show();
             }
         });
@@ -233,7 +228,6 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == READ_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             if (data != null) {
                 uri = data.getData();
-                //path = data.getData().getPath();
 
                 final AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
                 View mView = getLayoutInflater().inflate(R.layout.layout_dialog, null);
@@ -295,7 +289,6 @@ public class MainActivity extends AppCompatActivity {
                     if (separated.length == 2)
                         listOfVocabs.add(new Vocab(separated[0], separated[1]
                                 .replaceAll("\\\\n", "<br>"), mLng, false));
-
                 }
                 line = reader.readLine();
             }
@@ -319,35 +312,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-
     private void database() {
-        vocabViewModel = ViewModelProviders.of(this).get(VocabViewModel.class);
-        vocabViewModel.getAllVocabs().observe(this, new Observer<List<Vocab>>() {
-            @Override
-            public void onChanged(@Nullable List<Vocab> vocabs) {
-                adapter.setVocabs(vocabs);
-            }
-        });
+        vocabViewModel.getAllVocabs();
     }
 
-    private void database(String s) {
-        vocabViewModel = ViewModelProviders.of(this).get(VocabViewModel.class);
-        vocabViewModel.getAllSearchedVocabs(s).observe(MainActivity.this, new Observer<List<Vocab>>() {
-            @Override
-            public void onChanged(@Nullable List<Vocab> vocabs) {
-                adapter.setVocabs(vocabs);
-            }
-        });
+    private void database(String word, String language) {
+        if (language.equals("vsjo"))
+            language = "%";
+        word += "%";
+        vocabViewModel.getAllSearchedVocabs(word, language);
     }
 
-    private void database(String s, String r) {
-        vocabViewModel = ViewModelProviders.of(this).get(VocabViewModel.class);
-        vocabViewModel.getSearchedVocabs(s, r).observe(MainActivity.this, new Observer<List<Vocab>>() {
-            @Override
-            public void onChanged(@Nullable List<Vocab> vocabs) {
-                adapter.setVocabs(vocabs);
-            }
-        });
+    public static void updateAdapter(List<Vocab> vocabs) {
+        adapter.setVocabs(vocabs);
     }
+
 }

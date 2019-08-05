@@ -16,8 +16,6 @@ import java.util.ArrayList;
 
 public class DictionaryImport {
     private static final String[] STORAGE_PERMISSION = {Manifest.permission.READ_EXTERNAL_STORAGE};
-    private VocabViewModel vocabViewModel;
-
 
     public static void checkPermission(Activity activity) {
         int permissionExternalMemory = ActivityCompat.checkSelfPermission(
@@ -29,42 +27,6 @@ public class DictionaryImport {
                     STORAGE_PERMISSION,
                     1
             );
-        }
-    }
-
-    public void readTextFile(Uri uri, String mLng) {
-
-        ArrayList<Vocab> listOfVocabs = new ArrayList<>();
-
-        InputStream inputStream = null;
-        try {
-            inputStream = GlobalApplication.getAppContext().getContentResolver().openInputStream(uri);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-
-        try {
-            String line = reader.readLine();
-            while (line != null) {
-                if (!line.startsWith("##")) {
-                    String[] separated = line.split("\t");
-                    listOfVocabs.add(new Vocab(separated[0], separated[1].replaceAll("\\\\n", "<br>"), mLng, false));
-                }
-                line = reader.readLine();
-            }
-            vocabViewModel.insertAll(listOfVocabs);
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 }
