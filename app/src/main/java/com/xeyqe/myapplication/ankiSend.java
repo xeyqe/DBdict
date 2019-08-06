@@ -8,11 +8,15 @@ import android.content.pm.PackageManager;
 import androidx.annotation.NonNull;
 import androidx.core.app.ShareCompat;
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.Voice;
+import android.text.Editable;
 import android.text.Html;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -45,14 +49,17 @@ public class ankiSend extends AppCompatActivity {
     public static final String TTS_LOCALE = "ttsLocale";
     public static final String TTS_VOICE = "ttsVoice";
     public static final String ANKI_DECK = "ankiDeck";
+    public static final String ANKI_PATH = "ankiPath";
 
     private String loadedEngine;
     private String loadedLocale;
     private String loadedVoice;
     private String loadedDeck;
+    private String loadedPath;
 
     private EditText editTextFront;
     private EditText editTextBack;
+    private EditText editTextPath;
     private Button button;
     private Button buTTS;
     private Context context = GlobalApplication.getAppContext();
@@ -91,6 +98,7 @@ public class ankiSend extends AppCompatActivity {
 
         editTextFront = findViewById(R.id.editTextFront);
         editTextBack = findViewById(R.id.editTextBack);
+        editTextPath = findViewById(R.id.editTextPath);
 
         button = findViewById(R.id.button);
         buTTS = findViewById(R.id.buTTS);
@@ -122,29 +130,59 @@ public class ankiSend extends AppCompatActivity {
             }
         });
 
+        editTextPath.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                loadedPath = s.toString();
+                checkIfPathExists(s.toString());
+            }
+        });
+
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String front = editTextFront.getText().toString();
 
-                List<NoteInfo> duplicates = api.findDuplicateNotes(getIdOfBasic(), front);
-
-                if (duplicates.size() > 0) {
-                    for (NoteInfo info : duplicates) {
-                        if (info.getFields()[1].equals(meaning)) {
-                            Toast.makeText(ankiSend.this, "Already exists", Toast.LENGTH_LONG).show();
-                            break;
-                        } else {
-                            createMediaFile();
-                            sendNote();
-                            saveSharedPreferences();
-                        }
-                    }
-                } else {
-                    createMediaFile();
-                    sendNote();
-                    saveSharedPreferences();
+                List<NoteInfo> duplicates = null;
+                if (permissionChecker.doIHaveAnkiApiPermission(ankiSend.this)) {
+                    long id = getIdOfBasic() != null ? getIdOfBasic() : api.addNewBasicModel("basic");
+                    duplicates = api.findDuplicateNotes(id, front);
                 }
+
+                String path = loadedPath;
+                if (loadedPath.length() > 0 && !loadedPath.substring(loadedPath.length() - 1).equals(File.separator)) {
+                    path += File.separator;
+                }
+
+                if (checkIfPathExists(path)) {
+                    if (duplicates != null && duplicates.size() > 0) {
+                        for (NoteInfo info : duplicates) {
+                            if (info.getFields()[1].equals(meaning)) {
+                                Toast.makeText(ankiSend.this, "Already exists", Toast.LENGTH_LONG).show();
+                                break;
+                            } else {
+                                createMediaFile(path);
+                                sendNote();
+                                saveSharedPreferences();
+                            }
+                        }
+                    } else {
+                        createMediaFile(path);
+                        sendNote();
+                        saveSharedPreferences();
+                    }
+                } else
+                    Toast.makeText(ankiSend.this, "Path if not valid!", Toast.LENGTH_LONG).show();
             }
         });
 
@@ -175,6 +213,17 @@ public class ankiSend extends AppCompatActivity {
         }
 
         loadSharedPreferences();
+    }
+
+    private boolean checkIfPathExists(String path) {
+        File f = new File(path);
+        if (f.isDirectory() && new File(f.getParent()+File.separator + "collection.anki2").exists()) {
+            editTextPath.setBackgroundColor(Color.BLACK);
+            return true;
+        } else {
+            editTextPath.setBackgroundColor(Color.RED);
+            return false;
+        }
     }
 
     private void spinnerDeckFill() {
@@ -225,14 +274,12 @@ public class ankiSend extends AppCompatActivity {
         }, ttsEngine);
     }
 
-    private void createMediaFile() {
+    private void createMediaFile(String path) {
         String word = editTextFront.getText().toString();
         Pattern pattern = Pattern.compile("\\[sound:(.*?)\\]");
         Matcher matcher = pattern.matcher(word);
-        if (matcher.find())
-        {
+        if (matcher.find()) {
             try {
-                String path = getCollectionPath();
                 String text = word.replaceAll(" \\[sound:.*\\.wav\\]", "");
 
                 file = new File(path+matcher.group(1));
@@ -394,6 +441,9 @@ public class ankiSend extends AppCompatActivity {
         loadedLocale = sharedPreferences.getString(lang+TTS_LOCALE, "");
         loadedVoice = sharedPreferences.getString(lang+TTS_VOICE, "");
         loadedDeck = sharedPreferences.getString(lang+ANKI_DECK, "");
+        loadedPath = sharedPreferences.getString(lang+ANKI_PATH, getCollectionPath());
+
+        editTextPath.setText(loadedPath);
     }
 
     private void saveSharedPreferences() {
@@ -404,6 +454,8 @@ public class ankiSend extends AppCompatActivity {
         editor.putString(lang+TTS_LOCALE, spinnerLocale.getSelectedItem().toString());
         editor.putString(lang+TTS_VOICE, spinnerVoice.getSelectedItem().toString());
         editor.putString(lang+ANKI_DECK, spinnerDeck.getSelectedItem().toString());
+        if (checkIfPathExists(loadedPath))
+            editor.putString(lang+ANKI_PATH, editTextPath.getText().toString());
 
         editor.apply();
     }
@@ -451,5 +503,14 @@ public class ankiSend extends AppCompatActivity {
                 Toast.makeText(this, "Permission DENIED", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (mTTS != null) {
+            mTTS.stop();
+            mTTS.shutdown();
+        }
+        super.onDestroy();
     }
 }
