@@ -23,6 +23,7 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.ichi2.anki.api.AddContentApi;
+import com.ichi2.anki.api.NoteInfo;
 
 import java.io.File;
 import java.io.IOException;
@@ -124,17 +125,36 @@ public class ankiSend extends AppCompatActivity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                String front = editTextFront.getText().toString();
 
-                createMediaFile();
-                sendNote();
-                saveSharedPreferences();
+                List<NoteInfo> duplicates = api.findDuplicateNotes(getIdOfBasic(), front);
+
+                if (duplicates.size() > 0) {
+                    for (NoteInfo info : duplicates) {
+                        if (info.getFields()[1].equals(meaning)) {
+                            Toast.makeText(ankiSend.this, "Already exists", Toast.LENGTH_LONG).show();
+                            break;
+                        } else {
+                            createMediaFile();
+                            sendNote();
+                            saveSharedPreferences();
+                        }
+                    }
+                } else {
+                    createMediaFile();
+                    sendNote();
+                    saveSharedPreferences();
+                }
             }
         });
 
         buTTS.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                speak();
+                if (permissionChecker.doIHaveWritePermission(ankiSend.this)) {
+                    speak();
+                } else
+                    permissionChecker.checkWritePermission(ankiSend.this);
             }
         });
 
@@ -155,7 +175,6 @@ public class ankiSend extends AppCompatActivity {
         }
 
         loadSharedPreferences();
-
     }
 
     private void spinnerDeckFill() {
@@ -338,13 +357,11 @@ public class ankiSend extends AppCompatActivity {
     }
 
     private void speak() {
-        if (permissionChecker.doIHaveWritePermission(ankiSend.this)) {
-            String text = editTextFront.getText().toString().replaceAll(" \\[sound:.*\\]", "");
-            String filename = text.replaceAll(" ", "_") + ".wav";
+        String text = editTextFront.getText().toString().replaceAll(" \\[sound:.*\\]", "");
+        String filename = text.replaceAll(" ", "_") + ".wav";
 
-            mTTS.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
-            editTextFront.setText(text + " [sound:" + mTTS.getVoice().getName() + "_" + filename + "]");
-        }
+        mTTS.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+        editTextFront.setText(text + " [sound:" + mTTS.getVoice().getName() + "_" + filename + "]");
     }
 
     private void sendNote() {

@@ -37,15 +37,9 @@ public class VocabRepository {
         new DeleteAllVocabsAsyncTask(vocabDao).execute(language);
     }
 
-    /*public List<String> getAllLanguages() {
-        new GetAllLanguagesAsyncTask(vocabDao).execute();
-        return getAllLanguages;
-    }*/
     public LiveData<List<String>> getAllLanguages() {
         return getAllLanguages;
     }
-
-
 
     public void getAllSearchedVocabs(String search, String language) {
         new GetSearchedVocabsAsyncTask(vocabDao).execute(search, language);
@@ -106,27 +100,6 @@ public class VocabRepository {
             return null;
         }
     }
-
-    /*private class GetAllLanguagesAsyncTask extends AsyncTask<Void, Void, List<String>> {
-        private VocabDao vocabDao;
-
-        private GetAllLanguagesAsyncTask(VocabDao vocabDao) {
-            this.vocabDao = vocabDao;
-        }
-
-        @Override
-        protected List<String> doInBackground(Void... voids) {
-            return vocabDao.getAllLanguages();
-
-        }
-
-        @Override
-        protected void onPostExecute(List<String> strings) {
-            super.onPostExecute(strings);
-            getAllLanguages = strings;
-
-        }
-    }*/
 
     private static class InsertAllVocabsAsyncTask extends AsyncTask<List<Vocab>, Void, Void> {
         private VocabDao vocabDao;

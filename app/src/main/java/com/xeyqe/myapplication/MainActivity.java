@@ -211,6 +211,11 @@ public class MainActivity extends AppCompatActivity {
                 Vocab vocabUpdated = new Vocab(word, meaning, language, !history);
                 vocabUpdated.setId(id);
                 vocabViewModel.update(vocabUpdated);
+                String str = editText.getText().toString();
+                if (str.isEmpty())
+                    database();
+                else
+                    database(str, buLanguage.getText().toString());
             }
         }).attachToRecyclerView(recyclerView);
     }
