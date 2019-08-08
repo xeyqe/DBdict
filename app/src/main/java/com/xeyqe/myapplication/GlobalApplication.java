@@ -11,8 +11,6 @@ public class GlobalApplication extends Application {
     public void onCreate() {
         super.onCreate();
         appContext = getApplicationContext();
-
-
     }
 
     public static Context getAppContext() {

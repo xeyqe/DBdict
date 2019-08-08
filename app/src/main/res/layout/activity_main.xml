@@ -14,13 +14,15 @@
             android:layout_height="wrap_content"
             android:id="@+id/linear_layout">
 
-            <EditText
-                android:id="@+id/edit_text"
+            <SearchView
+                android:id="@+id/search_view"
                 android:layout_width = "0dp"
                 android:layout_height = "wrap_content"
                 android:layout_weight = "1"
                 android:inputType="text"
-                android:padding="15dp"/>
+                android:iconifiedByDefault="true"
+                android:defaultFocusHighlightEnabled="true"
+                android:focusedByDefault="true"/>
 
             <Button
                 android:id="@+id/buLanguage"
