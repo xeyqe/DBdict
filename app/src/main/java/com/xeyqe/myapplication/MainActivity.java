@@ -5,6 +5,7 @@ import android.app.AlertDialog;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProviders;
 
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
@@ -22,11 +23,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.PopupMenu;
-import android.widget.SearchView;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,8 +40,11 @@ public class MainActivity extends AppCompatActivity {
     private static final int READ_REQUEST_CODE = 42;
     public static String mLng = "germanstina";
     private String language2Delete;
+    private static final String TAG = "RAMadama";
     private EditText languages;
     private Uri uri;
+    private ProgressDialog progressDialog;
+    private List<Vocab> listOfVocabs;
     private PopupMenu popupMenu3;
 
     @Override
@@ -59,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setHasFixedSize(true);
 
-        final SearchView searchView = findViewById(R.id.search_view);
+        final EditText editText = findViewById(R.id.edit_text);
 
         recyclerView.setAdapter(adapter);
 
@@ -83,38 +85,17 @@ public class MainActivity extends AppCompatActivity {
             if ("text/plain".equals(type)) {
                 String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
                 if (sharedText != null) {
-                    searchView.setQuery(sharedText.trim(),true);
+                    editText.setText(sharedText.trim());
                 }
             }
         }
 
-
-        searchView.setIconified(false);
-
-        if (searchView.getQuery().toString().trim().length() == 0) {
+        if (editText.getText().toString().trim().length() == 0) {
             database();
         } else
-            database(searchView.getQuery().toString(),buLanguage.getText().toString());
+            database(editText.getText().toString(),buLanguage.getText().toString());
 
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                return false;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                if (newText.trim().length() == 0) {
-                    database();
-                } else {
-                    String language = buLanguage.getText().toString();
-                    database(newText, language);
-                }
-                return true;
-            }
-        });
-
-        /*editText.addTextChangedListener(new TextWatcher() {
+        editText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
 
@@ -133,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
                     database(s.toString(), language);
                 }
             }
-        });*/
+        });
 
         adapter.setOnClickListener(new VocabAdapter.OnItemClickListener() {
             @Override
@@ -167,16 +148,14 @@ public class MainActivity extends AppCompatActivity {
                     public boolean onMenuItemClick(MenuItem item) {
                         String language = item.getTitle().toString();
                         if (language.equals("add")) {
-                            if (permissionChecker.doIHaveReadPermission(MainActivity.this))
-                                performFileSearch();
-                            else
-                                permissionChecker.checkReadPermission(MainActivity.this);
+                            permissionChecker.checkReadPermission(MainActivity.this);
+                            performFileSearch();
                         } else {
                             buLanguage.setText(language);
-                            if (searchView.getQuery().toString().trim().length() == 0) {
+                            if (editText.getText().toString().trim().length() == 0) {
                                 database();
                             } else {
-                                database(searchView.getQuery().toString(), language);
+                                database(editText.getText().toString(), language);
                             }
                         }
                         return true;
@@ -232,7 +211,7 @@ public class MainActivity extends AppCompatActivity {
                 Vocab vocabUpdated = new Vocab(word, meaning, language, !history);
                 vocabUpdated.setId(id);
                 vocabViewModel.update(vocabUpdated);
-                String str = searchView.getQuery().toString();
+                String str = editText.getText().toString();
                 if (str.isEmpty())
                     database();
                 else
@@ -279,10 +258,12 @@ public class MainActivity extends AppCompatActivity {
                         });
                 dialog.show();
                 String path = uri.getPath();
-                String filename = path.substring(path.lastIndexOf(File.separator)+1);
+                String filename = path.substring(path.lastIndexOf("/")+1);
                 if (filename.indexOf(".") > 0)
                     filename = filename.substring(0, filename.lastIndexOf("."));
                 languages.setText(filename);
+
+
             }
         }
     }
@@ -300,6 +281,12 @@ public class MainActivity extends AppCompatActivity {
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
 
         try {
+            progressDialog=new ProgressDialog(MainActivity.this);
+            progressDialog.setMessage("wait till dictionary inserted");
+            progressDialog.setCancelable(false);
+            progressDialog.setInverseBackgroundForced(false);
+            progressDialog.show();
+
             String line = reader.readLine();
             while (line != null) {
                 if (!line.startsWith("##") && line.contains("\t")) {
@@ -315,6 +302,8 @@ public class MainActivity extends AppCompatActivity {
                         Toast.LENGTH_LONG).show();
             else
                 vocabViewModel.insertAll(listOfVocabs);
+            progressDialog.dismiss();
+
         } catch (IOException e) {
             e.printStackTrace();
         } finally {

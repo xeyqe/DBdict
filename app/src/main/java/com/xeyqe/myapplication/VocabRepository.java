@@ -17,12 +17,20 @@ public class VocabRepository {
         getAllLanguages = vocabDao.getAllLanguages();
     }
 
+    public void insert(Vocab vocab) {
+        new InsertVocabAsyncTask(vocabDao).execute(vocab);
+    }
+
     public void insertAll(List<Vocab> vocabs) {
         new InsertAllVocabsAsyncTask(vocabDao).execute(vocabs);
     }
 
     public void update(Vocab vocab) {
         new UpdateVocabAsyncTask(vocabDao).execute(vocab);
+    }
+
+    public void delete(Vocab vocab) {
+        new DeleteVocabAsyncTask(vocabDao).execute(vocab);
     }
 
     public void deleteAllVocabs(String language) {
@@ -117,6 +125,20 @@ public class VocabRepository {
         @Override
         protected Void doInBackground(Vocab... vocabs) {
             vocabDao.update(vocabs[0]);
+            return null;
+        }
+    }
+
+    private static class DeleteVocabAsyncTask extends AsyncTask<Vocab, Void, Void> {
+        private VocabDao vocabDao;
+
+        private DeleteVocabAsyncTask(VocabDao vocabDao) {
+            this.vocabDao = vocabDao;
+        }
+
+        @Override
+        protected Void doInBackground(Vocab... vocabs) {
+            vocabDao.delete(vocabs[0]);
             return null;
         }
     }

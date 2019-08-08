@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.ichi2.anki.api.AddContentApi;
 

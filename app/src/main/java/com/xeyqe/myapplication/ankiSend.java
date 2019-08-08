@@ -163,8 +163,6 @@ public class ankiSend extends AppCompatActivity {
                 if (loadedPath.length() > 0 && !loadedPath.substring(loadedPath.length() - 1).equals(File.separator)) {
                     path += File.separator;
                 }
-                String externalPath = Environment.getExternalStorageDirectory().getPath() +
-                        File.separator;
 
                 if (checkIfPathExists(path)) {
                     if (duplicates != null && duplicates.size() > 0) {
@@ -173,13 +171,13 @@ public class ankiSend extends AppCompatActivity {
                                 Toast.makeText(ankiSend.this, "Already exists", Toast.LENGTH_LONG).show();
                                 break;
                             } else {
-                                createMediaFile(externalPath + path);
+                                createMediaFile(path);
                                 sendNote();
                                 saveSharedPreferences();
                             }
                         }
                     } else {
-                        createMediaFile(externalPath + path);
+                        createMediaFile(path);
                         sendNote();
                         saveSharedPreferences();
                     }
@@ -218,10 +216,8 @@ public class ankiSend extends AppCompatActivity {
     }
 
     private boolean checkIfPathExists(String path) {
-        String externalPath = Environment.getExternalStorageDirectory() + File.separator;
-        File f = new File( externalPath + path);
-        if (f.isDirectory() && new File(f.getParent()+File.separator + "collection.anki2").exists() &&
-                !path.substring(0,1).equals(File.separator)) {
+        File f = new File(path);
+        if (f.isDirectory() && new File(f.getParent()+File.separator + "collection.anki2").exists()) {
             editTextPath.setBackgroundColor(Color.BLACK);
             return true;
         } else {
@@ -445,7 +441,7 @@ public class ankiSend extends AppCompatActivity {
         loadedLocale = sharedPreferences.getString(lang+TTS_LOCALE, "");
         loadedVoice = sharedPreferences.getString(lang+TTS_VOICE, "");
         loadedDeck = sharedPreferences.getString(lang+ANKI_DECK, "");
-        loadedPath = sharedPreferences.getString(lang+ANKI_PATH, "AnkiDroid/collection.media/");
+        loadedPath = sharedPreferences.getString(lang+ANKI_PATH, getCollectionPath());
 
         editTextPath.setText(loadedPath);
     }
