@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -171,6 +172,7 @@ public class ankiSend extends AppCompatActivity {
                         for (NoteInfo info : duplicates) {
                             if (info.getFields()[1].equals(meaning)) {
                                 Toast.makeText(ankiSend.this, "Already exists", Toast.LENGTH_LONG).show();
+                                saveSharedPreferences();
                                 break;
                             } else {
                                 createMediaFile(externalPath + path);
@@ -261,6 +263,10 @@ public class ankiSend extends AppCompatActivity {
     }
 
     private void initializeTTS(String ttsEngine) {
+        if (mTTS != null) {
+            mTTS.stop();
+            mTTS.shutdown();
+        }
         mTTS = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
@@ -334,12 +340,9 @@ public class ankiSend extends AppCompatActivity {
 
         List<String> locales = new ArrayList<>();
 
-
-        for (Voice voice : mTTS.getVoices()) {
-            if (!voice.getFeatures().contains("notInstalled") && !voice.isNetworkConnectionRequired()) {
-                String locale = voice.getLocale().toString();
-                if (!locales.contains(locale))
-                    locales.add(locale);
+        if (mTTS.getAvailableLanguages()!=null) {
+            for (Locale locale : mTTS.getAvailableLanguages()) {
+                locales.add(locale.toString());
             }
         }
 
@@ -372,10 +375,12 @@ public class ankiSend extends AppCompatActivity {
 
     private void spinnerVoiceFill() {
         List<String> voices = new ArrayList<>();
+        String localeString = spinnerLocale.getSelectedItem().toString();
+        Locale locale = new Locale(localeString.split("_")[0],localeString.split("_")[1]);
 
         for (Voice voice : mTTS.getVoices()) {
             if (!voice.getFeatures().contains("notInstalled") && !voice.isNetworkConnectionRequired() &&
-                voice.getLocale().toString().equals(spinnerLocale.getSelectedItem().toString())) {
+                voice.getLocale().getISO3Country().equals(locale.getISO3Country())) {
 
                 map.put(voice.getName(), voice);
                 voices.add(voice.getName());
