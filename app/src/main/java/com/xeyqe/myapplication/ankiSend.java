@@ -290,7 +290,7 @@ public class ankiSend extends AppCompatActivity {
                             break;
                     }
 
-                    mTTS.speak("hovno", TextToSpeech.QUEUE_FLUSH, null, null);
+                    mTTS.speak("", TextToSpeech.QUEUE_FLUSH, null, null);
 
                     buTTS.setEnabled(true);
                     if (spinnerEngine.getSelectedItem() == null) {
