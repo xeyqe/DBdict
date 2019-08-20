@@ -358,6 +358,8 @@ public class ankiSend extends AppCompatActivity {
     private void spinnerLocaleFill() {
 
         List<String> languages = new ArrayList<>();
+        map.clear();
+        mapVoiceName_Voice.clear();
 
         for (Voice voice : mTTS.getVoices()) {
             if (!voice.isNetworkConnectionRequired()) {
@@ -378,6 +380,9 @@ public class ankiSend extends AppCompatActivity {
         }
 
         languages.addAll(map.keySet());
+
+        if (languages.isEmpty())
+            spinnerVoice.setAdapter(null);
 
 
         Collections.sort(languages);
