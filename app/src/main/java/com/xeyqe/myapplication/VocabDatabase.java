@@ -14,7 +14,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
-@Database(entities = {Vocab.class}, version = 1)
+@Database(entities = {Vocab.class}, version = 1, exportSchema = false)
 public abstract class VocabDatabase extends RoomDatabase {
 
     private static VocabDatabase instance;

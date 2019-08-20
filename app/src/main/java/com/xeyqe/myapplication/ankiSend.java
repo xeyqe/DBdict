@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.ShareCompat;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -57,6 +58,7 @@ public class ankiSend extends AppCompatActivity {
     private String loadedVoice;
     private String loadedDeck;
     private String loadedPath;
+    private String language;
 
     private EditText editTextFront;
     private EditText editTextBack;
@@ -75,7 +77,8 @@ public class ankiSend extends AppCompatActivity {
     private Spinner spinnerVoice;
     private Spinner spinnerDeck;
 
-    private HashMap<String,Voice> map;
+    private HashMap<String,List<Voice>> map;
+    private HashMap<String,Voice> mapVoiceName_Voice;
 
     private ArrayAdapter<String> adapterEngines;
     private ArrayAdapter<String> adapterLocale;
@@ -97,6 +100,8 @@ public class ankiSend extends AppCompatActivity {
         canLoadVoice = true;
         canLoadDeck = true;
 
+        language = "";
+
         editTextFront = findViewById(R.id.editTextFront);
         editTextBack = findViewById(R.id.editTextBack);
         editTextPath = findViewById(R.id.editTextPath);
@@ -109,8 +114,10 @@ public class ankiSend extends AppCompatActivity {
         spinnerDeck = findViewById(R.id.spinnerDeck);
 
         map = new HashMap<>();
+        mapVoiceName_Voice = new HashMap<>();
 
         Intent intent = getIntent();
+
 
         meaning = intent.getStringExtra(EXTRA_MEANING);
         lang = intent.getStringExtra(EXTRA_LANGUAGE);
@@ -273,6 +280,18 @@ public class ankiSend extends AppCompatActivity {
                 if (status == TextToSpeech.SUCCESS) {
 
                     mTTS.setSpeechRate(1);
+                    Boolean b = true;
+                    for (Voice voice : mTTS.getVoices()) {
+                        if (b) {
+                            mTTS.setVoice(voice);
+                            b = false;
+                        }
+                        else
+                            break;
+                    }
+
+                    mTTS.speak("hovno", TextToSpeech.QUEUE_FLUSH, null, null);
+
                     buTTS.setEnabled(true);
                     if (spinnerEngine.getSelectedItem() == null) {
                         spinnerEngineFill();
@@ -338,17 +357,32 @@ public class ankiSend extends AppCompatActivity {
 
     private void spinnerLocaleFill() {
 
-        List<String> locales = new ArrayList<>();
+        List<String> languages = new ArrayList<>();
 
-        if (mTTS.getAvailableLanguages()!=null) {
-            for (Locale locale : mTTS.getAvailableLanguages()) {
-                locales.add(locale.toString());
+        for (Voice voice : mTTS.getVoices()) {
+            if (!voice.isNetworkConnectionRequired()) {
+                String language = voice.getLocale().getDisplayLanguage();
+
+                List<Voice> list;
+                if (map.containsKey(language)) {
+                    list = map.get(language);
+                } else {
+                    list = new ArrayList<>();
+                }
+
+                list.add(voice);
+                map.put(language,list);
+                mapVoiceName_Voice.put(voice.getName(), voice);
+
             }
         }
 
-        Collections.sort(locales);
+        languages.addAll(map.keySet());
 
-        adapterLocale = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, locales);
+
+        Collections.sort(languages);
+
+        adapterLocale = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, languages);
         spinnerLocale.setAdapter(adapterLocale);
 
         spinnerLocale.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -361,8 +395,10 @@ public class ankiSend extends AppCompatActivity {
                     }
                     canLoadLocale = false;
                 }
-                    if (mTTS.getVoices() != null)
-                        spinnerVoiceFill();
+                language = spinnerLocale.getItemAtPosition(position).toString();
+
+                if (mTTS.getVoices() != null)
+                    spinnerVoiceFill();
 
             }
 
@@ -374,22 +410,18 @@ public class ankiSend extends AppCompatActivity {
     }
 
     private void spinnerVoiceFill() {
-        List<String> voices = new ArrayList<>();
-        String localeString = spinnerLocale.getSelectedItem().toString();
-        Locale locale = new Locale(localeString.split("_")[0],localeString.split("_")[1]);
+        List<Voice> voices;
+        List<String> voicesNames = new ArrayList<>();
 
-        for (Voice voice : mTTS.getVoices()) {
-            if (!voice.getFeatures().contains("notInstalled") && !voice.isNetworkConnectionRequired() &&
-                voice.getLocale().getISO3Country().equals(locale.getISO3Country())) {
+        voices = map.get(language);
 
-                map.put(voice.getName(), voice);
-                voices.add(voice.getName());
-            }
+        for (Voice voice : voices) {
+            voicesNames.add(voice.getName());
         }
 
-        Collections.sort(voices);
+        Collections.sort(voicesNames);
 
-        adapterVoice = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, voices);
+        adapterVoice = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, voicesNames);
         spinnerVoice.setAdapter(adapterVoice);
 
         spinnerVoice.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -402,7 +434,14 @@ public class ankiSend extends AppCompatActivity {
                     }
                     canLoadVoice = false;
                 }
-                    mTTS.setVoice(map.get(parent.getItemAtPosition(position)));
+
+                if (mapVoiceName_Voice.get(parent.getItemAtPosition(position)).getFeatures().contains("notInstalled")) {
+                    Intent installIntent = new Intent();
+                    installIntent.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
+                    installIntent = installIntent.setPackage(spinnerEngine.getSelectedItem().toString());
+                    startActivity(installIntent);
+                }
+                mTTS.setVoice(mapVoiceName_Voice.get(parent.getItemAtPosition(position)));
             }
 
             @Override
@@ -429,7 +468,7 @@ public class ankiSend extends AppCompatActivity {
                     api.addNewBasicModel("basic");
             Long err = api.addNote(modelId, deckId, new String[] {word, meaning}, null);
             if (err != null)
-                Toast.makeText(ankiSend.this, "Successufuly added", Toast.LENGTH_LONG).show();
+                Toast.makeText(ankiSend.this, "Successfully added", Toast.LENGTH_LONG).show();
             else
                 Toast.makeText(ankiSend.this, "error", Toast.LENGTH_LONG).show();
         } else {
@@ -490,15 +529,6 @@ public class ankiSend extends AppCompatActivity {
             }
         }
         return null;
-    }
-
-    public static String getCollectionPath() {
-        return new File(getDefaultAnkiDroidDirectory(), "collection.anki2").getParent() +
-                File.separator + "collection.media" + File.separator;
-    }
-
-    public static String getDefaultAnkiDroidDirectory() {
-        return new File(Environment.getExternalStorageDirectory(), "AnkiDroid").getAbsolutePath();
     }
 
     @Override
