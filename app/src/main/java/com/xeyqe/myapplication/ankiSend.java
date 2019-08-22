@@ -1,12 +1,13 @@
 package com.xeyqe.myapplication;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.app.ShareCompat;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -36,7 +37,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -242,6 +242,7 @@ public class ankiSend extends AppCompatActivity {
     private void spinnerDeckFill() {
         List<String> decks = new ArrayList<>();
         Map<Long, String> deckList = api.getDeckList();
+
         for (Map.Entry<Long, String> entry : deckList.entrySet()) {
             decks.add(entry.getValue());
         }
@@ -381,8 +382,10 @@ public class ankiSend extends AppCompatActivity {
 
         languages.addAll(map.keySet());
 
-        if (languages.isEmpty())
+        if (mTTS.getVoices().isEmpty()) {
             spinnerVoice.setAdapter(null);
+            spinnerLocale.setAdapter(null);
+        }
 
 
         Collections.sort(languages);
@@ -440,13 +443,31 @@ public class ankiSend extends AppCompatActivity {
                     canLoadVoice = false;
                 }
 
-                if (mapVoiceName_Voice.get(parent.getItemAtPosition(position)).getFeatures().contains("notInstalled")) {
-                    Intent installIntent = new Intent();
-                    installIntent.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
-                    installIntent = installIntent.setPackage(spinnerEngine.getSelectedItem().toString());
-                    startActivity(installIntent);
+                String stringVoice = parent.getItemAtPosition(position).toString();
+                if (mapVoiceName_Voice.get(stringVoice).getFeatures().contains("notInstalled")) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(ankiSend.this);
+
+                    builder.setMessage("Voice " + stringVoice + " is not installed. " +
+                            "Do you want to install it?")
+                            .setPositiveButton("ok", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    Intent installIntent = new Intent();
+                                    installIntent.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
+                                    installIntent = installIntent.setPackage(spinnerEngine.getSelectedItem().toString());
+                                    startActivity(installIntent);
+                                }
+                            })
+                            .setNegativeButton("cancel", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    spinnerVoice.setAdapter(null);
+                                }
+                            });
+                    builder.show();
+
                 }
-                mTTS.setVoice(mapVoiceName_Voice.get(parent.getItemAtPosition(position)));
+                mTTS.setVoice(mapVoiceName_Voice.get(stringVoice));
             }
 
             @Override
