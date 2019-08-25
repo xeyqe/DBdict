@@ -15,6 +15,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.speech.tts.Voice;
 import android.text.Editable;
 import android.text.Html;
@@ -201,7 +202,11 @@ public class ankiSend extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (permissionChecker.doIHaveWritePermission(ankiSend.this)) {
-                    speak();
+                    if (spinnerVoice.getAdapter() != null)
+                        speak();
+                    else
+                        Toast.makeText(ankiSend.this, "Come on! Just give me some voice, please.",
+                                Toast.LENGTH_LONG).show();
                 } else
                     permissionChecker.checkWritePermission(ankiSend.this);
             }
@@ -214,6 +219,23 @@ public class ankiSend extends AppCompatActivity {
                     buTTS.setEnabled(true);
                     spinnerEngineFill();
                 }
+            }
+        });
+
+        mTTS.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+            @Override
+            public void onStart(String utteranceId) {
+
+            }
+
+            @Override
+            public void onDone(String utteranceId) {
+
+            }
+
+            @Override
+            public void onError(String utteranceId) {
+
             }
         });
 
@@ -422,15 +444,25 @@ public class ankiSend extends AppCompatActivity {
         List<String> voicesNames = new ArrayList<>();
 
         voices = map.get(language);
+        String firstInstalledVoice = null;
 
         for (Voice voice : voices) {
             voicesNames.add(voice.getName());
+            if (firstInstalledVoice == null)
+                if (!voice.getFeatures().contains("notInstalled"))
+                    firstInstalledVoice = voice.getName();
+
         }
 
         Collections.sort(voicesNames);
 
         adapterVoice = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, voicesNames);
         spinnerVoice.setAdapter(adapterVoice);
+
+        if (firstInstalledVoice != null) {
+            int pos = adapterVoice.getPosition(firstInstalledVoice);
+            spinnerVoice.setSelection(pos);
+        }
 
         spinnerVoice.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -448,7 +480,7 @@ public class ankiSend extends AppCompatActivity {
                     AlertDialog.Builder builder = new AlertDialog.Builder(ankiSend.this);
 
                     builder.setMessage("Voice " + stringVoice + " is not installed. " +
-                            "Do you want to install it?")
+                            "Do you want to install it now?")
                             .setPositiveButton("ok", new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
