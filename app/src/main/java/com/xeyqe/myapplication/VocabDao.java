@@ -13,9 +13,6 @@ import java.util.List;
 public interface VocabDao {
 
     @Insert
-    void insert(Vocab vocab);
-
-    @Insert
     void insertAll(List<Vocab> vocabs);
 
     @Update

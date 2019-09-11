@@ -13,7 +13,7 @@ import com.ichi2.anki.api.AddContentApi;
 
 import static com.ichi2.anki.api.AddContentApi.READ_WRITE_PERMISSION;
 
-public class permissionChecker {
+public class PermissionChecker {
     private static final String[] STORAGE_READ_PERMISSION = { Manifest.permission.READ_EXTERNAL_STORAGE };
     private static final String[] STORAGE_WRITE_PERMISSION = { Manifest.permission.WRITE_EXTERNAL_STORAGE };
     private static final int REQUEST_EXTERNAL_STORAGE = 1;

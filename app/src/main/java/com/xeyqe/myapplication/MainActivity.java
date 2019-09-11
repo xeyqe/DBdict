@@ -3,7 +3,6 @@ package com.xeyqe.myapplication;
 import android.app.Activity;
 import android.app.AlertDialog;
 import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProviders;
 
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -15,8 +14,6 @@ import android.os.Bundle;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.ItemTouchHelper;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -36,7 +33,6 @@ import java.util.List;
 
 
 public class MainActivity extends AppCompatActivity {
-    private VocabViewModel vocabViewModel;
     private static final VocabAdapter adapter = new VocabAdapter();
     private static final int READ_REQUEST_CODE = 42;
     public static String mLng = "germanstina";
@@ -44,6 +40,8 @@ public class MainActivity extends AppCompatActivity {
     private EditText languages;
     private Uri uri;
     private PopupMenu popupMenu3;
+    private VocabRepository repository;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,8 +62,9 @@ public class MainActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
 
         popupMenu3 = new PopupMenu(MainActivity.this, buLanguage);
-        vocabViewModel = ViewModelProviders.of(this).get(VocabViewModel.class);
-        vocabViewModel.getGetAllLanguages().observe(this, new Observer<List<String>>() {
+
+        repository = new VocabRepository(this.getApplication());
+        repository.getAllLanguages().observe(this, new Observer<List<String>>() {
             @Override
             public void onChanged(List<String> strings) {
                 popupMenu3.getMenu().clear();
@@ -87,7 +86,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
-
 
         searchView.setIconified(false);
 
@@ -117,19 +115,19 @@ public class MainActivity extends AppCompatActivity {
         adapter.setOnClickListener(new VocabAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(Vocab vocab) {
-                Intent intent = new Intent(MainActivity.this, ankiSend.class);
-                intent.putExtra(ankiSend.EXTRA_WORD, vocab.getWord());
-                intent.putExtra(ankiSend.EXTRA_MEANING, vocab.getMeaning());
-                intent.putExtra(ankiSend.EXTRA_LANGUAGE, vocab.getLanguage());
+                Intent intent = new Intent(MainActivity.this, AnkiSend.class);
+                intent.putExtra(AnkiSend.EXTRA_WORD, vocab.getWord());
+                intent.putExtra(AnkiSend.EXTRA_MEANING, vocab.getMeaning());
+                intent.putExtra(AnkiSend.EXTRA_LANGUAGE, vocab.getLanguage());
 
-                if (vocab.getHistory() == false) {
+                if (!vocab.getHistory()) {
                     String word = vocab.getWord();
                     String meaning = vocab.getMeaning();
                     String language = vocab.getLanguage();
                     int id = vocab.getId();
                     Vocab vocabUpdated = new Vocab(word, meaning, language, true);
                     vocabUpdated.setId(id);
-                    vocabViewModel.update(vocabUpdated);
+                    repository.update(vocabUpdated);
                 }
 
                 MainActivity.this.startActivityForResult(intent, 1);
@@ -146,10 +144,10 @@ public class MainActivity extends AppCompatActivity {
                     public boolean onMenuItemClick(MenuItem item) {
                         String language = item.getTitle().toString();
                         if (language.equals("add")) {
-                            if (permissionChecker.doIHaveReadPermission(MainActivity.this))
+                            if (PermissionChecker.doIHaveReadPermission(MainActivity.this))
                                 performFileSearch();
                             else
-                                permissionChecker.checkReadPermission(MainActivity.this);
+                                PermissionChecker.checkReadPermission(MainActivity.this);
                         } else {
                             buLanguage.setText(language);
                             if (searchView.getQuery().toString().trim().length() == 0) {
@@ -176,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
                             .setPositiveButton("ok", new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
-                                    vocabViewModel.deleteAllNotes(language2Delete);
+                                    repository.deleteAllVocabs(language2Delete);
                                     buLanguage.setText("vsjo");
                                 }
                             })
@@ -196,7 +194,9 @@ public class MainActivity extends AppCompatActivity {
         new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0,
                 ItemTouchHelper.RIGHT | ItemTouchHelper.LEFT) {
             @Override
-            public boolean onMove(@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder viewHolder, @NonNull RecyclerView.ViewHolder viewHolder1) {
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                                  @NonNull RecyclerView.ViewHolder viewHolder,
+                                  @NonNull RecyclerView.ViewHolder viewHolder1) {
                 return false;
             }
 
@@ -210,7 +210,7 @@ public class MainActivity extends AppCompatActivity {
                 int id = vocab.getId();
                 Vocab vocabUpdated = new Vocab(word, meaning, language, !history);
                 vocabUpdated.setId(id);
-                vocabViewModel.update(vocabUpdated);
+                repository.update(vocabUpdated);
                 String str = searchView.getQuery().toString();
                 if (str.isEmpty())
                     database();
@@ -253,7 +253,6 @@ public class MainActivity extends AppCompatActivity {
 
                                 mLng = language;
                                 readTextFile(uri);
-
                             }
                         });
                 dialog.show();
@@ -293,7 +292,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Wrong input. I want word and meaning divided by tab.",
                         Toast.LENGTH_LONG).show();
             else
-                vocabViewModel.insertAll(listOfVocabs);
+                repository.insertAll(listOfVocabs);
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -308,14 +307,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void database() {
-        vocabViewModel.getAllVocabs();
+        repository.getAllVocabs();
     }
 
     private void database(String word, String language) {
         if (language.equals("vsjo"))
             language = "%";
         word += "%";
-        vocabViewModel.getAllSearchedVocabs(word, language);
+        repository.getAllSearchedVocabs(word, language);
     }
 
     public static void updateAdapter(List<Vocab> vocabs) {

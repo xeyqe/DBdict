@@ -8,13 +8,9 @@ public class Vocab {
 
     @PrimaryKey(autoGenerate = true)
     private int id;
-
     private String word;
-
     private String meaning;
-
     private String language;
-
     private boolean history;
 
     public Vocab(String word, String meaning, String language, boolean history) {

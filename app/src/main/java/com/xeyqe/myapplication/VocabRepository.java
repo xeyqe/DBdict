@@ -79,20 +79,6 @@ public class VocabRepository {
         }
     }
 
-    private static class InsertVocabAsyncTask extends AsyncTask<Vocab, Void, Void> {
-        private VocabDao vocabDao;
-
-        private InsertVocabAsyncTask(VocabDao vocabDao) {
-            this.vocabDao = vocabDao;
-        }
-
-        @Override
-        protected Void doInBackground(Vocab... vocabs) {
-            vocabDao.insert(vocabs[0]);
-            return null;
-        }
-    }
-
     private static class InsertAllVocabsAsyncTask extends AsyncTask<List<Vocab>, Void, Void> {
         private VocabDao vocabDao;
 
