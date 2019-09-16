@@ -17,6 +17,7 @@ import android.speech.tts.Voice;
 import android.text.Editable;
 import android.text.Html;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -34,6 +35,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 public class AnkiSend extends AppCompatActivity {
@@ -309,19 +312,17 @@ public class AnkiSend extends AppCompatActivity {
         List<String> languages = new ArrayList<>();
         map.clear();
         mapVoiceName_Voice.clear();
+        Set<Voice> voices = mTTS.setOfVoices();
 
-        for (Voice voice : mTTS.setOfVoices()) {
+        for (Voice voice : voices) {
             if (!voice.isNetworkConnectionRequired() && !voice.getFeatures().contains("notInstalled")) {
                 String language = voice.getLocale().getDisplayLanguage();
 
-                List<Voice> list;
-                if (map.containsKey(language)) {
+                List<Voice> list = new ArrayList<>();
+                if (map.containsKey(language))
                     list = map.get(language);
-                } else {
-                    list = new ArrayList<>();
-                }
 
-                list.add(voice);
+                Objects.requireNonNull(list).add(voice);
                 map.put(language,list);
                 mapVoiceName_Voice.put(voice.getName(), voice);
 
@@ -329,12 +330,19 @@ public class AnkiSend extends AppCompatActivity {
         }
 
         languages.addAll(map.keySet());
+        if (languages.isEmpty())
+            Toast.makeText(AnkiSend.this, "languages is empty for some goddamn reason, fuck", Toast.LENGTH_LONG).show();
 
-        if (mTTS.setOfVoices().isEmpty()) {
+        if (voices.isEmpty()) {
             spinnerVoice.setAdapter(null);
             spinnerLocale.setAdapter(null);
         }
 
+
+        Log.e(Integer.toString(voices.size()),"languages2");
+
+
+        Log.e(Integer.toString(languages.size()),"languages");
 
         Collections.sort(languages);
         languages.add("install");
