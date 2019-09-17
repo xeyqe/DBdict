@@ -6,12 +6,14 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.app.ShareCompat;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.Voice;
 import android.text.Editable;
@@ -43,6 +45,7 @@ public class AnkiSend extends AppCompatActivity {
     public static final String EXTRA_WORD = "com.xeyqe.myapplication.EXTRA_WORD";
     public static final String EXTRA_MEANING = "com.xeyqe.myapplication.EXTRA_MEANING";
     public static final String EXTRA_LANGUAGE = "com.xeyqe.myapplication.EXTRA_LANGUAGE";
+    private static final int INSTALL_TTS_REQUEST_CODE = 32;
 
     public static final String SHARED_PREFS = "sharedPrefs";
     public static final String TTS_ENGINE = "ttsEngine";
@@ -57,6 +60,7 @@ public class AnkiSend extends AppCompatActivity {
     private String loadedDeck;
     private String loadedPath;
     private String language;
+    private int countOfVoices;
 
     private EditText editTextFront;
     private EditText editTextBack;
@@ -87,6 +91,7 @@ public class AnkiSend extends AppCompatActivity {
     private boolean canLoadDeck;
 
     private Tts mTTS;
+    private ArrayList<String> myVoices = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,6 +99,7 @@ public class AnkiSend extends AppCompatActivity {
         setContentView(R.layout.activity_anki_send);
 
         mTTS = new Tts(AnkiSend.this);
+
 
         canLoadEngine = true;
         canLoadLocale = true;
@@ -308,14 +314,15 @@ public class AnkiSend extends AppCompatActivity {
     }
 
     private void spinnerLocaleFill() {
-
+        Set<Voice> voices = mTTS.setOfVoices();
         List<String> languages = new ArrayList<>();
         map.clear();
         mapVoiceName_Voice.clear();
-        Set<Voice> voices = mTTS.setOfVoices();
+        countOfVoices = 0;
+
 
         for (Voice voice : voices) {
-            if (!voice.isNetworkConnectionRequired() && !voice.getFeatures().contains("notInstalled")) {
+                        if (!voice.isNetworkConnectionRequired() && !voice.getFeatures().contains("notInstalled")) {
                 String language = voice.getLocale().getDisplayLanguage();
 
                 List<Voice> list = new ArrayList<>();
@@ -323,29 +330,25 @@ public class AnkiSend extends AppCompatActivity {
                     list = map.get(language);
 
                 Objects.requireNonNull(list).add(voice);
-                map.put(language,list);
+
+                countOfVoices++;
+                map.put(language, list);
                 mapVoiceName_Voice.put(voice.getName(), voice);
 
             }
+
         }
 
+
         languages.addAll(map.keySet());
-        if (languages.isEmpty())
-            Toast.makeText(AnkiSend.this, "languages is empty for some goddamn reason, fuck", Toast.LENGTH_LONG).show();
+        Collections.sort(languages);
 
         if (voices.isEmpty()) {
             spinnerVoice.setAdapter(null);
             spinnerLocale.setAdapter(null);
-        }
+        } else
+            languages.add("install");
 
-
-        Log.e(Integer.toString(voices.size()),"languages2");
-
-
-        Log.e(Integer.toString(languages.size()),"languages");
-
-        Collections.sort(languages);
-        languages.add("install");
 
         adapterLocale = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, languages);
         spinnerLocale.setAdapter(adapterLocale);
@@ -365,13 +368,13 @@ public class AnkiSend extends AppCompatActivity {
                     Intent installIntent = new Intent();
                     installIntent.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
                     installIntent = installIntent.setPackage(spinnerEngine.getSelectedItem().toString());
-                    startActivity(installIntent);
+                    //startActivity(installIntent);
+                    startActivityForResult(installIntent,INSTALL_TTS_REQUEST_CODE);
                 }
 
                 if (mTTS.setOfVoices() != null && !language.equals("install"))
                     spinnerVoiceFill();
-
-            }
+                }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
@@ -517,6 +520,24 @@ public class AnkiSend extends AppCompatActivity {
             } else {
                 Toast.makeText(this, "Permission DENIED", Toast.LENGTH_SHORT).show();
             }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == INSTALL_TTS_REQUEST_CODE) {
+            int newCountOfVoices = 0;
+            Set<Voice> voices = mTTS.setOfVoices();
+            for (Voice voice : voices) {
+                if (!voice.isNetworkConnectionRequired() && !voice.getFeatures().contains("notInstalled")) {
+                    newCountOfVoices++;
+                }
+            }
+            if (newCountOfVoices != countOfVoices) {
+                spinnerLocaleFill();
+            }
+
         }
     }
 
