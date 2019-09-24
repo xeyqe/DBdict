@@ -13,13 +13,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.Voice;
 import android.text.Editable;
 import android.text.Html;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -220,8 +218,6 @@ public class AnkiSend extends AppCompatActivity {
             spinnerDeck.setEnabled(true);
             spinnerDeckFill();
         }
-
-
     }
 
     private boolean checkIfPathExists(String path) {
@@ -490,28 +486,24 @@ public class AnkiSend extends AppCompatActivity {
     }
 
     public void mCallback2() {
-        Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            public void run() {
-                mTTS.initializeTTS(loadedEngine, new Callable<Void>() {
-                    public Void call() {
-                        retryLimit++;
-                        fillVoicesMap();
+        mTTS.initializeTTS(loadedEngine, new Callable<Void>() {
+            public Void call() {
+                retryLimit++;
+                fillVoicesMap();
 
 
-                        if (retryLimit < 200 && map.keySet().isEmpty())
-                            mCallback2();
-                        else {
-                            retryLimit = 0;
-                            mCallback();
-                        }
+                if (retryLimit < 200 && map.keySet().isEmpty())
+                    mCallback2();
+                else if (retryLimit >= 200 && !map.keySet().isEmpty())
+                    installVoices();
+                else {
+                    retryLimit = 0;
+                    mCallback();
+                }
 
-
-                        return null;
-                    }
-                });
+                return null;
             }
-        }, 200);
+        });
     }
 
     @Override

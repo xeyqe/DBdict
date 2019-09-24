@@ -42,15 +42,6 @@ public class Tts {
                 if (status == TextToSpeech.SUCCESS) {
 
                     tts.setSpeechRate(1);
-                    Boolean b = true;
-                    /*for (Voice voice : tts.getVoices()) {
-                        if (b) {
-                            tts.setVoice(voice);
-                            b = false;
-                        }
-                        else
-                            break;
-                    }*/
 
                     Button buTTS = activity.findViewById(R.id.buTTS);
                     buTTS.setEnabled(true);
