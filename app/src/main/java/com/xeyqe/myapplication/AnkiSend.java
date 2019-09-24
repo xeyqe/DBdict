@@ -46,6 +46,9 @@ public class AnkiSend extends AppCompatActivity {
     public static final String EXTRA_MEANING = "com.xeyqe.myapplication.EXTRA_MEANING";
     public static final String EXTRA_LANGUAGE = "com.xeyqe.myapplication.EXTRA_LANGUAGE";
     private static final int INSTALL_TTS_REQUEST_CODE = 32;
+    private static final int START_TTS_ENGINE = 64;
+
+
 
     public static final String SHARED_PREFS = "sharedPrefs";
     public static final String TTS_ENGINE = "ttsEngine";
@@ -61,6 +64,7 @@ public class AnkiSend extends AppCompatActivity {
     private String loadedPath;
     private String language;
     private int countOfVoices;
+    private int retryLimit;
 
     private EditText editTextFront;
     private EditText editTextBack;
@@ -80,16 +84,6 @@ public class AnkiSend extends AppCompatActivity {
     private HashMap<String,List<Voice>> map;
     private HashMap<String,Voice> mapVoiceName_Voice;
 
-    private ArrayAdapter<String> adapterEngines;
-    private ArrayAdapter<String> adapterLocale;
-    private ArrayAdapter<String> adapterVoice;
-    private ArrayAdapter<String> adapterDeck;
-
-    private boolean canLoadEngine;
-    private boolean canLoadLocale;
-    private boolean canLoadVoice;
-    private boolean canLoadDeck;
-
     private Tts mTTS;
     private ArrayList<String> myVoices = null;
 
@@ -100,13 +94,8 @@ public class AnkiSend extends AppCompatActivity {
 
         mTTS = new Tts(AnkiSend.this);
 
-
-        canLoadEngine = true;
-        canLoadLocale = true;
-        canLoadVoice = true;
-        canLoadDeck = true;
-
         language = "";
+        retryLimit = 0;
 
         editTextFront = findViewById(R.id.editTextFront);
         editTextBack = findViewById(R.id.editTextBack);
@@ -219,12 +208,12 @@ public class AnkiSend extends AppCompatActivity {
             }
         });
 
-        mTTS.initializeTTS("com.google.android.tts", new Callable<Void>() {
-            public Void call() {
-                mCallback();
-                return null;
-            }
-        });
+        loadSharedPreferences();
+
+        Intent startEngine = new Intent();
+        startEngine.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
+        startEngine = startEngine.setPackage(loadedEngine);
+        startActivityForResult(startEngine, START_TTS_ENGINE);
 
         PermissionChecker.checkAnkiApiPermission(AnkiSend.this);
         if (PermissionChecker.doIHaveAnkiApiPermission(AnkiSend.this)) {
@@ -232,7 +221,7 @@ public class AnkiSend extends AppCompatActivity {
             spinnerDeckFill();
         }
 
-        loadSharedPreferences();
+
     }
 
     private boolean checkIfPathExists(String path) {
@@ -248,6 +237,13 @@ public class AnkiSend extends AppCompatActivity {
         }
     }
 
+    private void installVoices() {
+        Intent installIntent = new Intent();
+        installIntent.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
+        installIntent = installIntent.setPackage(spinnerEngine.getSelectedItem().toString());
+        startActivityForResult(installIntent, INSTALL_TTS_REQUEST_CODE);
+    }
+
     private void spinnerDeckFill() {
         List<String> decks = new ArrayList<>();
         Map<Long, String> deckList = api.getDeckList();
@@ -256,26 +252,14 @@ public class AnkiSend extends AppCompatActivity {
             decks.add(entry.getValue());
         }
 
-        adapterDeck = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, decks);
+        ArrayAdapter<String> adapterDeck = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, decks);
 
         spinnerDeck.setAdapter(adapterDeck);
-        spinnerDeck.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (canLoadDeck) {
-                    if (!loadedDeck.equals("")) {
-                        int pos = adapterDeck.getPosition(loadedDeck);
-                        spinnerDeck.setSelection(pos);
-                    }
-                    canLoadDeck = false;
-                }
-            }
+        if (!loadedDeck.equals("")) {
+            int pos = adapterDeck.getPosition(loadedDeck);
+            spinnerDeck.setSelection(pos);
+        }
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
 
     }
 
@@ -285,25 +269,117 @@ public class AnkiSend extends AppCompatActivity {
             engines.add(name.name);
         }
 
-        adapterEngines = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, engines);
+        ArrayAdapter<String> adapterEngines = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, engines);
         spinnerEngine.setAdapter(adapterEngines);
+        if (!loadedEngine.equals("")) {
+            int pos = adapterEngines.getPosition(loadedEngine);
+            spinnerEngine.setSelection(pos);
+        }
 
         spinnerEngine.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (canLoadEngine) {
-                    if (!loadedEngine.equals("")) {
-                        int pos = adapterEngines.getPosition(loadedEngine);
-                        spinnerEngine.setSelection(pos);
-                    }
-                    canLoadEngine = false;
+                String engine = parent.getItemAtPosition(position).toString();
+
+                if (!engine.equals(loadedEngine)) {
+                    map.clear();
+                    spinnerLocale.setAdapter(null);
+                    spinnerVoice.setAdapter(null);
+                    loadedEngine = parent.getItemAtPosition(position).toString();
+                    Intent startEngine = new Intent();
+                    startEngine.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
+                    startEngine = startEngine.setPackage(loadedEngine);
+                    startActivityForResult(startEngine, START_TTS_ENGINE);
+                } else
+                    spinnerLocaleFill();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                //TODO
+            }
+        });
+    }
+
+    private void spinnerLocaleFill() {
+        List<String> languages = new ArrayList<>();
+        map.clear();
+        mapVoiceName_Voice.clear();
+        countOfVoices = 0;
+
+
+        fillVoicesMap();
+
+        spinnerVoice.setAdapter(null);
+        spinnerLocale.setAdapter(null);
+
+        if (!map.keySet().isEmpty())
+            languages.add("install");
+
+        languages.addAll(map.keySet());
+        Collections.sort(languages);
+
+        ArrayAdapter<String> adapterLocale = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, languages);
+        spinnerLocale.setAdapter(adapterLocale);
+        if (!loadedLocale.equals("")) {
+            int pos = adapterLocale.getPosition(loadedLocale);
+            spinnerLocale.setSelection(pos);
+        }
+
+        spinnerLocale.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+
+                language = spinnerLocale.getItemAtPosition(position).toString();
+                if (language.equals("install")) {
+                    installVoices();
                 }
-                mTTS.initializeTTS(parent.getItemAtPosition(position).toString(), new Callable<Void>() {
-                    public Void call() {
-                        mCallback();
-                        return null;
-                    }
-                });
+
+                if (mTTS.setOfVoices() != null && !language.equals("install"))
+                    spinnerVoiceFill();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+
+    }
+
+    private void spinnerVoiceFill() {
+        List<Voice> voices;
+        List<String> voicesNames = new ArrayList<>();
+
+        voices = map.get(language);
+        String firstInstalledVoice = null;
+
+        for (Voice voice : voices) {
+            voicesNames.add(voice.getName());
+            if (firstInstalledVoice == null)
+                if (!voice.getFeatures().contains("notInstalled"))
+                    firstInstalledVoice = voice.getName();
+        }
+
+        Collections.sort(voicesNames);
+
+        ArrayAdapter<String> adapterVoice = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, voicesNames);
+        spinnerVoice.setAdapter(adapterVoice);
+
+        if (firstInstalledVoice != null) {
+            int pos = adapterVoice.getPosition(firstInstalledVoice);
+            spinnerVoice.setSelection(pos);
+        }
+        if (!loadedVoice.equals("")) {
+            int pos = adapterVoice.getPosition(loadedVoice);
+            spinnerVoice.setSelection(pos);
+        }
+
+        spinnerVoice.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                String stringVoice = parent.getItemAtPosition(position).toString();
+                mTTS.setVoice(mapVoiceName_Voice.get(stringVoice));
             }
 
             @Override
@@ -313,16 +389,10 @@ public class AnkiSend extends AppCompatActivity {
         });
     }
 
-    private void spinnerLocaleFill() {
+    private void fillVoicesMap() {
         Set<Voice> voices = mTTS.setOfVoices();
-        List<String> languages = new ArrayList<>();
-        map.clear();
-        mapVoiceName_Voice.clear();
-        countOfVoices = 0;
-
-
         for (Voice voice : voices) {
-                        if (!voice.isNetworkConnectionRequired() && !voice.getFeatures().contains("notInstalled")) {
+            if (!voice.isNetworkConnectionRequired() && !voice.getFeatures().contains("notInstalled")) {
                 String language = voice.getLocale().getDisplayLanguage();
 
                 List<Voice> list = new ArrayList<>();
@@ -338,96 +408,6 @@ public class AnkiSend extends AppCompatActivity {
             }
 
         }
-
-
-        languages.addAll(map.keySet());
-        Collections.sort(languages);
-
-        if (voices.isEmpty()) {
-            spinnerVoice.setAdapter(null);
-            spinnerLocale.setAdapter(null);
-        } else
-            languages.add("install");
-
-
-        adapterLocale = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, languages);
-        spinnerLocale.setAdapter(adapterLocale);
-
-        spinnerLocale.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (canLoadLocale) {
-                    if (!loadedLocale.equals("")) {
-                        int pos = adapterLocale.getPosition(loadedLocale);
-                        spinnerLocale.setSelection(pos);
-                    }
-                    canLoadLocale = false;
-                }
-                language = spinnerLocale.getItemAtPosition(position).toString();
-                if (language.equals("install")) {
-                    Intent installIntent = new Intent();
-                    installIntent.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
-                    installIntent = installIntent.setPackage(spinnerEngine.getSelectedItem().toString());
-                    //startActivity(installIntent);
-                    startActivityForResult(installIntent,INSTALL_TTS_REQUEST_CODE);
-                }
-
-                if (mTTS.setOfVoices() != null && !language.equals("install"))
-                    spinnerVoiceFill();
-                }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
-    }
-
-    private void spinnerVoiceFill() {
-        List<Voice> voices;
-        List<String> voicesNames = new ArrayList<>();
-
-        voices = map.get(language);
-        String firstInstalledVoice = null;
-
-        for (Voice voice : voices) {
-            voicesNames.add(voice.getName());
-            if (firstInstalledVoice == null)
-                if (!voice.getFeatures().contains("notInstalled"))
-                    firstInstalledVoice = voice.getName();
-
-        }
-
-        Collections.sort(voicesNames);
-
-        adapterVoice = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, voicesNames);
-        spinnerVoice.setAdapter(adapterVoice);
-
-        if (firstInstalledVoice != null) {
-            int pos = adapterVoice.getPosition(firstInstalledVoice);
-            spinnerVoice.setSelection(pos);
-        }
-
-        spinnerVoice.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (canLoadVoice) {
-                    if (!loadedVoice.equals("")) {
-                        int pos = adapterVoice.getPosition(loadedVoice);
-                        spinnerVoice.setSelection(pos);
-                    }
-                    canLoadVoice = false;
-                }
-
-                String stringVoice = parent.getItemAtPosition(position).toString();
-                mTTS.setVoice(mapVoiceName_Voice.get(stringVoice));
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
     }
 
     private void sendNote() {
@@ -456,7 +436,7 @@ public class AnkiSend extends AppCompatActivity {
 
     private void loadSharedPreferences() {
         SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
-        loadedEngine = sharedPreferences.getString(lang+TTS_ENGINE, "");
+        loadedEngine = sharedPreferences.getString(lang+TTS_ENGINE, "com.google.android.tts");
         loadedLocale = sharedPreferences.getString(lang+TTS_LOCALE, "");
         loadedVoice = sharedPreferences.getString(lang+TTS_VOICE, "");
         loadedDeck = sharedPreferences.getString(lang+ANKI_DECK, "");
@@ -503,11 +483,35 @@ public class AnkiSend extends AppCompatActivity {
     }
 
     public void mCallback() {
-        if (spinnerEngine.getSelectedItem() == null) {
+        if (spinnerEngine.getSelectedItem() == null)
             spinnerEngineFill();
-        } else {
+        else
             spinnerLocaleFill();
-        }
+    }
+
+    public void mCallback2() {
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            public void run() {
+                mTTS.initializeTTS(loadedEngine, new Callable<Void>() {
+                    public Void call() {
+                        retryLimit++;
+                        fillVoicesMap();
+
+
+                        if (retryLimit < 200 && map.keySet().isEmpty())
+                            mCallback2();
+                        else {
+                            retryLimit = 0;
+                            mCallback();
+                        }
+
+
+                        return null;
+                    }
+                });
+            }
+        }, 200);
     }
 
     @Override
@@ -538,6 +542,20 @@ public class AnkiSend extends AppCompatActivity {
                 spinnerLocaleFill();
             }
 
+        } else if (requestCode == START_TTS_ENGINE) {
+            ArrayList<String> availableLanguages =
+                    data.getStringArrayListExtra(TextToSpeech.Engine.EXTRA_AVAILABLE_VOICES);
+
+            if (availableLanguages.isEmpty()) {
+                installVoices();
+            } else {
+                mTTS.initializeTTS(loadedEngine, new Callable<Void>() {
+                    public Void call() {
+                        mCallback2();
+                        return null;
+                    }
+                });
+            }
         }
     }
 

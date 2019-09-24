@@ -43,17 +43,15 @@ public class Tts {
 
                     tts.setSpeechRate(1);
                     Boolean b = true;
-                    for (Voice voice : tts.getVoices()) {
+                    /*for (Voice voice : tts.getVoices()) {
                         if (b) {
                             tts.setVoice(voice);
                             b = false;
                         }
                         else
                             break;
-                    }
+                    }*/
 
-
-                    tts.speak("", TextToSpeech.QUEUE_FLUSH, null, null);
                     Button buTTS = activity.findViewById(R.id.buTTS);
                     buTTS.setEnabled(true);
 
@@ -63,10 +61,6 @@ public class Tts {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-
-
-
-
                 }
             }
         }, ttsEngine);
