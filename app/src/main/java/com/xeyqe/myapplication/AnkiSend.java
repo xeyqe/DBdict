@@ -18,6 +18,7 @@ import android.speech.tts.Voice;
 import android.text.Editable;
 import android.text.Html;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -286,8 +287,9 @@ public class AnkiSend extends AppCompatActivity {
                     startEngine.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
                     startEngine = startEngine.setPackage(loadedEngine);
                     startActivityForResult(startEngine, START_TTS_ENGINE);
-                } else
+                } else {
                     spinnerLocaleFill();
+                }
             }
 
             @Override
@@ -309,10 +311,14 @@ public class AnkiSend extends AppCompatActivity {
         spinnerVoice.setAdapter(null);
         spinnerLocale.setAdapter(null);
 
-        if (!map.keySet().isEmpty())
-            languages.add("install");
 
         languages.addAll(map.keySet());
+
+        //if (!map.keySet().isEmpty())
+//        if (languages.isEmpty())
+//            languages.add("install");
+
+
         Collections.sort(languages);
 
         ArrayAdapter<String> adapterLocale = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, languages);
@@ -402,7 +408,6 @@ public class AnkiSend extends AppCompatActivity {
                 mapVoiceName_Voice.put(voice.getName(), voice);
 
             }
-
         }
     }
 
@@ -488,18 +493,12 @@ public class AnkiSend extends AppCompatActivity {
     public void mCallback2() {
         mTTS.initializeTTS(loadedEngine, new Callable<Void>() {
             public Void call() {
-                retryLimit++;
                 fillVoicesMap();
 
-
-                if (retryLimit < 200 && map.keySet().isEmpty())
+                if ( map.keySet().isEmpty())
                     mCallback2();
-                else if (retryLimit >= 200 && !map.keySet().isEmpty())
-                    installVoices();
-                else {
-                    retryLimit = 0;
+                else
                     mCallback();
-                }
 
                 return null;
             }
