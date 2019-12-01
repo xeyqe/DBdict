@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.Voice;
 import android.text.Editable;
@@ -85,6 +86,8 @@ public class AnkiSend extends AppCompatActivity {
 
     private Tts mTTS;
     private ArrayList<String> myVoices = null;
+    private Handler mHandler = new Handler();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -294,7 +297,6 @@ public class AnkiSend extends AppCompatActivity {
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
-                //TODO
             }
         });
     }
@@ -305,49 +307,51 @@ public class AnkiSend extends AppCompatActivity {
         mapVoiceName_Voice.clear();
         countOfVoices = 0;
 
-
         fillVoicesMap();
+        if (map.size() != 0) {
+            spinnerVoice.setAdapter(null);
+            spinnerLocale.setAdapter(null);
 
-        spinnerVoice.setAdapter(null);
-        spinnerLocale.setAdapter(null);
+            languages.addAll(map.keySet());
 
+            Collections.sort(languages);
 
-        languages.addAll(map.keySet());
+            ArrayAdapter<String> adapterLocale = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, languages);
+            spinnerLocale.setAdapter(adapterLocale);
+            if (!loadedLocale.equals("")) {
+                int pos = adapterLocale.getPosition(loadedLocale);
+                spinnerLocale.setSelection(pos);
+            }
 
-        //if (!map.keySet().isEmpty())
-//        if (languages.isEmpty())
-//            languages.add("install");
+            spinnerLocale.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 
+                    language = spinnerLocale.getItemAtPosition(position).toString();
+                    if (language.equals("install")) {
+                        installVoices();
+                    }
 
-        Collections.sort(languages);
-
-        ArrayAdapter<String> adapterLocale = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, languages);
-        spinnerLocale.setAdapter(adapterLocale);
-        if (!loadedLocale.equals("")) {
-            int pos = adapterLocale.getPosition(loadedLocale);
-            spinnerLocale.setSelection(pos);
-        }
-
-        spinnerLocale.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-
-                language = spinnerLocale.getItemAtPosition(position).toString();
-                if (language.equals("install")) {
-                    installVoices();
+                    if (mTTS.setOfVoices() != null && !language.equals("install"))
+                        spinnerVoiceFill();
                 }
 
-                if (mTTS.setOfVoices() != null && !language.equals("install"))
-                    spinnerVoiceFill();
-            }
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
 
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
-
+                }
+            });
+        } else {
+            mHandler.postDelayed(mRunnable, 200);
+        }
     }
+
+    private Runnable mRunnable = new Runnable() {
+        @Override
+        public void run() {
+            spinnerLocaleFill();
+        }
+    };
 
     private void spinnerVoiceFill() {
         List<Voice> voices;
@@ -406,7 +410,6 @@ public class AnkiSend extends AppCompatActivity {
                 countOfVoices++;
                 map.put(language, list);
                 mapVoiceName_Voice.put(voice.getName(), voice);
-
             }
         }
     }
@@ -484,25 +487,30 @@ public class AnkiSend extends AppCompatActivity {
     }
 
     public void mCallback() {
-        if (spinnerEngine.getSelectedItem() == null)
+        if (spinnerEngine.getSelectedItem() == null) {
             spinnerEngineFill();
+        }
         else
             spinnerLocaleFill();
     }
 
+//    public void mCallback2() {
+//        mTTS.initializeTTS(loadedEngine, new Callable<Void>() {
+//            public Void call() {
+//                fillVoicesMap();
+//
+//                if ( map.keySet().isEmpty())
+//                    mCallback2();
+//                else
+//                    mCallback();
+//
+//                return null;
+//            }
+//        });
+//    }
+
     public void mCallback2() {
-        mTTS.initializeTTS(loadedEngine, new Callable<Void>() {
-            public Void call() {
-                fillVoicesMap();
-
-                if ( map.keySet().isEmpty())
-                    mCallback2();
-                else
-                    mCallback();
-
-                return null;
-            }
-        });
+        mCallback();
     }
 
     @Override

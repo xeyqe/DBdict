@@ -2,6 +2,8 @@ package com.xeyqe.myapplication;
 
 import android.app.Activity;
 import android.content.Context;
+import android.os.Handler;
+import android.os.SystemClock;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.Voice;
 import android.util.Log;
@@ -22,7 +24,6 @@ public class Tts {
     private Context context;
     private TextToSpeech tts;
     private File file;
-
 
     public Tts(Activity activity) {
         this.activity = activity;
@@ -45,6 +46,7 @@ public class Tts {
 
                     Button buTTS = activity.findViewById(R.id.buTTS);
                     buTTS.setEnabled(true);
+                    tts.speak("", TextToSpeech.QUEUE_FLUSH, null, null);
 
                     try {
                         methodParam.call();
@@ -87,7 +89,9 @@ public class Tts {
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
         EditText editTextFront = activity.findViewById(R.id.editTextFront);
 
-        editTextFront.setText(text + " [sound:" + tts.getVoice().getName() + "_" + filename + "]");
+        String buttonText = text + " [sound:" + tts.getVoice().getName() + "_" + filename + "]";
+
+        editTextFront.setText(buttonText);
     }
 
     public List<TextToSpeech.EngineInfo> listOfEngines() {
@@ -95,7 +99,9 @@ public class Tts {
     }
 
     public Set<Voice> setOfVoices() {
-        return tts.getVoices();
+        Set<Voice> voices;
+        voices = tts.getVoices();
+        return voices;
     }
 
     public void setVoice(Voice voice) {
