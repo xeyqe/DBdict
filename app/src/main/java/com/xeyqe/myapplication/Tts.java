@@ -2,8 +2,6 @@ package com.xeyqe.myapplication;
 
 import android.app.Activity;
 import android.content.Context;
-import android.os.Handler;
-import android.os.SystemClock;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.Voice;
 import android.util.Log;
@@ -102,6 +100,10 @@ public class Tts {
         Set<Voice> voices;
         voices = tts.getVoices();
         return voices;
+    }
+
+    public Voice getDefaultVoice() {
+        return tts.getDefaultVoice();
     }
 
     public void setVoice(Voice voice) {

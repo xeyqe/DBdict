@@ -19,7 +19,6 @@ import android.speech.tts.Voice;
 import android.text.Editable;
 import android.text.Html;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -49,7 +48,6 @@ public class AnkiSend extends AppCompatActivity {
     private static final int START_TTS_ENGINE = 64;
 
 
-
     public static final String SHARED_PREFS = "sharedPrefs";
     public static final String TTS_ENGINE = "ttsEngine";
     public static final String TTS_LOCALE = "ttsLocale";
@@ -69,8 +67,6 @@ public class AnkiSend extends AppCompatActivity {
     private EditText editTextFront;
     private EditText editTextBack;
     private EditText editTextPath;
-    private Button button;
-    private Button buTTS;
     private Context context = GlobalApplication.getAppContext();
     private AddContentApi api = new AddContentApi(context);
     private String meaning;
@@ -81,8 +77,8 @@ public class AnkiSend extends AppCompatActivity {
     private Spinner spinnerVoice;
     private Spinner spinnerDeck;
 
-    private HashMap<String,List<Voice>> map;
-    private HashMap<String,Voice> mapVoiceName_Voice;
+    private HashMap<String, List<Voice>> map;
+    private HashMap<String, Voice> mapVoiceName_Voice;
 
     private Tts mTTS;
     private ArrayList<String> myVoices = null;
@@ -95,6 +91,8 @@ public class AnkiSend extends AppCompatActivity {
         setContentView(R.layout.activity_anki_send);
 
         mTTS = new Tts(AnkiSend.this);
+        Button buTTS;
+        Button button;
 
         language = "";
         retryLimit = 0;
@@ -226,9 +224,9 @@ public class AnkiSend extends AppCompatActivity {
 
     private boolean checkIfPathExists(String path) {
         String externalPath = Environment.getExternalStorageDirectory() + File.separator;
-        File f = new File( externalPath + path);
-        if (f.isDirectory() && new File(f.getParent()+File.separator + "collection.anki2").exists() &&
-                !path.substring(0,1).equals(File.separator)) {
+        File f = new File(externalPath + path);
+        if (f.isDirectory() && new File(f.getParent() + File.separator + "collection.anki2").exists() &&
+                !path.substring(0, 1).equals(File.separator)) {
             editTextPath.setBackgroundColor(Color.BLACK);
             return true;
         } else {
@@ -330,9 +328,7 @@ public class AnkiSend extends AppCompatActivity {
                     language = spinnerLocale.getItemAtPosition(position).toString();
                     if (language.equals("install")) {
                         installVoices();
-                    }
-
-                    if (mTTS.setOfVoices() != null && !language.equals("install"))
+                    } else if (mTTS.setOfVoices() != null)
                         spinnerVoiceFill();
                 }
 
@@ -341,15 +337,20 @@ public class AnkiSend extends AppCompatActivity {
 
                 }
             });
-        } else {
-            mHandler.postDelayed(mRunnable, 200);
         }
     }
 
     private Runnable mRunnable = new Runnable() {
         @Override
         public void run() {
-            spinnerLocaleFill();
+            if (retryLimit < 30) {
+                retryLimit++;
+                fillVoicesMap();
+            } else {
+                retryLimit = 0;
+                Toast.makeText(AnkiSend.this, "Speech initialization failed.",
+                        Toast.LENGTH_LONG).show();
+            }
         }
     };
 
@@ -363,8 +364,7 @@ public class AnkiSend extends AppCompatActivity {
         for (Voice voice : voices) {
             voicesNames.add(voice.getName());
             if (firstInstalledVoice == null)
-                if (!voice.getFeatures().contains("notInstalled"))
-                    firstInstalledVoice = voice.getName();
+                firstInstalledVoice = voice.getName();
         }
 
         Collections.sort(voicesNames);
@@ -398,19 +398,23 @@ public class AnkiSend extends AppCompatActivity {
     private void fillVoicesMap() {
         Set<Voice> voices = mTTS.setOfVoices();
         for (Voice voice : voices) {
-            if (!voice.isNetworkConnectionRequired() && !voice.getFeatures().contains("notInstalled")) {
-                String language = voice.getLocale().getDisplayLanguage();
+            String language = voice.getLocale().getDisplayLanguage();
 
-                List<Voice> list = new ArrayList<>();
-                if (map.containsKey(language))
-                    list = map.get(language);
+            List<Voice> list = new ArrayList<>();
+            if (map.containsKey(language))
+                list = map.get(language);
 
-                Objects.requireNonNull(list).add(voice);
+            Objects.requireNonNull(list).add(voice);
 
-                countOfVoices++;
-                map.put(language, list);
-                mapVoiceName_Voice.put(voice.getName(), voice);
-            }
+            countOfVoices++;
+            map.put(language, list);
+            mapVoiceName_Voice.put(voice.getName(), voice);
+        }
+        if (map.size() == 0) {
+            mHandler.postDelayed(mRunnable, 200);
+        } else if (retryLimit != 0) {
+            retryLimit = 0;
+            spinnerLocaleFill();
         }
     }
 
@@ -421,7 +425,7 @@ public class AnkiSend extends AppCompatActivity {
                     api.addNewDeck(spinnerDeck.getSelectedItem().toString());
             long modelId = getIdOfBasic() != null ? getIdOfBasic() :
                     api.addNewBasicModel("basic");
-            Long err = api.addNote(modelId, deckId, new String[] {word, meaning}, null);
+            Long err = api.addNote(modelId, deckId, new String[]{word, meaning}, null);
             if (err != null)
                 Toast.makeText(AnkiSend.this, "Successfully added", Toast.LENGTH_LONG).show();
             else
@@ -440,11 +444,11 @@ public class AnkiSend extends AppCompatActivity {
 
     private void loadSharedPreferences() {
         SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
-        loadedEngine = sharedPreferences.getString(lang+TTS_ENGINE, "com.google.android.tts");
-        loadedLocale = sharedPreferences.getString(lang+TTS_LOCALE, "");
-        loadedVoice = sharedPreferences.getString(lang+TTS_VOICE, "");
-        loadedDeck = sharedPreferences.getString(lang+ANKI_DECK, "");
-        loadedPath = sharedPreferences.getString(lang+ANKI_PATH, "AnkiDroid/collection.media/");
+        loadedEngine = sharedPreferences.getString(lang + TTS_ENGINE, "com.google.android.tts");
+        loadedLocale = sharedPreferences.getString(lang + TTS_LOCALE, "");
+        loadedVoice = sharedPreferences.getString(lang + TTS_VOICE, "");
+        loadedDeck = sharedPreferences.getString(lang + ANKI_DECK, "");
+        loadedPath = sharedPreferences.getString(lang + ANKI_PATH, "AnkiDroid/collection.media/");
 
         editTextPath.setText(loadedPath);
     }
@@ -453,12 +457,12 @@ public class AnkiSend extends AppCompatActivity {
         SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
 
-        editor.putString(lang+TTS_ENGINE, spinnerEngine.getSelectedItem().toString());
-        editor.putString(lang+TTS_LOCALE, spinnerLocale.getSelectedItem().toString());
-        editor.putString(lang+TTS_VOICE, spinnerVoice.getSelectedItem().toString());
-        editor.putString(lang+ANKI_DECK, spinnerDeck.getSelectedItem().toString());
+        editor.putString(lang + TTS_ENGINE, spinnerEngine.getSelectedItem().toString());
+        editor.putString(lang + TTS_LOCALE, spinnerLocale.getSelectedItem().toString());
+        editor.putString(lang + TTS_VOICE, spinnerVoice.getSelectedItem().toString());
+        editor.putString(lang + ANKI_DECK, spinnerDeck.getSelectedItem().toString());
         if (checkIfPathExists(loadedPath))
-            editor.putString(lang+ANKI_PATH, editTextPath.getText().toString());
+            editor.putString(lang + ANKI_PATH, editTextPath.getText().toString());
 
         editor.apply();
     }
@@ -489,25 +493,9 @@ public class AnkiSend extends AppCompatActivity {
     public void mCallback() {
         if (spinnerEngine.getSelectedItem() == null) {
             spinnerEngineFill();
-        }
-        else
+        } else
             spinnerLocaleFill();
     }
-
-//    public void mCallback2() {
-//        mTTS.initializeTTS(loadedEngine, new Callable<Void>() {
-//            public Void call() {
-//                fillVoicesMap();
-//
-//                if ( map.keySet().isEmpty())
-//                    mCallback2();
-//                else
-//                    mCallback();
-//
-//                return null;
-//            }
-//        });
-//    }
 
     public void mCallback2() {
         mCallback();
@@ -515,7 +503,7 @@ public class AnkiSend extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == 0)  {
+        if (requestCode == 0) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 spinnerDeck.setEnabled(true);
                 spinnerDeckFill();
@@ -533,9 +521,7 @@ public class AnkiSend extends AppCompatActivity {
             int newCountOfVoices = 0;
             Set<Voice> voices = mTTS.setOfVoices();
             for (Voice voice : voices) {
-                if (!voice.isNetworkConnectionRequired() && !voice.getFeatures().contains("notInstalled")) {
-                    newCountOfVoices++;
-                }
+                newCountOfVoices++;
             }
             if (newCountOfVoices != countOfVoices) {
                 spinnerLocaleFill();
