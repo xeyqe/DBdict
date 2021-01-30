@@ -14,6 +14,8 @@ import android.os.Bundle;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.ItemTouchHelper;
+
+import android.os.Handler;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -41,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
     private Uri uri;
     private PopupMenu popupMenu3;
     private VocabRepository repository;
+    private Handler timeout = new Handler();
+    private String searchText;
 
 
     @Override
@@ -102,12 +106,22 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                if (newText.trim().length() == 0) {
+                searchText = newText;
+
+                Runnable mRunnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        if (searchText.trim().length() == 0) {
                     database();
                 } else {
                     String language = buLanguage.getText().toString();
-                    database(newText, language);
+                            database(searchText, language);
                 }
+                    }
+                };
+                timeout.removeCallbacksAndMessages(null);
+                timeout.postDelayed(mRunnable, 250);
+
                 return true;
             }
         });
