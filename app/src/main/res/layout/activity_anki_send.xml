@@ -9,7 +9,7 @@
     tools:context=".AnkiSend">
 
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:layout_width="match_parent">
 
         <LinearLayout
@@ -119,25 +119,9 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/button" />
 
-        <EditText
-            android:id="@+id/editTextPath"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginBottom="8dp"
-            android:ems="10"
-            android:inputType="text"
-            app:layout_constraintBottom_toTopOf="@+id/view_type"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="1.0"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/buTTS"
-            app:layout_constraintVertical_bias="1.0" />
-
         <LinearLayout
             android:id="@+id/view_type"
+            app:layout_constraintTop_toBottomOf="@id/buTTS"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"

@@ -8,17 +8,16 @@ import android.content.pm.PackageManager;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ShareCompat;
+import androidx.core.content.FileProvider;
+import android.net.Uri;
+import android.content.ActivityNotFoundException;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.graphics.Color;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.Voice;
-import android.text.Editable;
 import android.text.Html;
-import android.text.TextWatcher;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -30,7 +29,6 @@ import android.widget.Toast;
 import com.ichi2.anki.api.AddContentApi;
 import com.ichi2.anki.api.NoteInfo;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,20 +51,17 @@ public class AnkiSend extends AppCompatActivity {
     public static final String TTS_LOCALE = "ttsLocale";
     public static final String TTS_VOICE = "ttsVoice";
     public static final String ANKI_DECK = "ankiDeck";
-    public static final String ANKI_PATH = "ankiPath";
 
     private String loadedEngine;
     private String loadedLocale;
     private String loadedVoice;
     private String loadedDeck;
-    private String loadedPath;
     private String language;
     private int countOfVoices;
     private int retryLimit;
 
     private EditText editTextFront;
     private EditText editTextBack;
-    private EditText editTextPath;
     private Context context = GlobalApplication.getAppContext();
     private AddContentApi api = new AddContentApi(context);
     private String meaning;
@@ -89,6 +84,7 @@ public class AnkiSend extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_anki_send);
+        WindowInsetsHelper.apply(this);
 
         mTTS = new Tts(AnkiSend.this);
         Button buTTS;
@@ -99,7 +95,6 @@ public class AnkiSend extends AppCompatActivity {
 
         editTextFront = findViewById(R.id.editTextFront);
         editTextBack = findViewById(R.id.editTextBack);
-        editTextPath = findViewById(R.id.editTextPath);
 
         button = findViewById(R.id.button);
         buTTS = findViewById(R.id.buTTS);
@@ -133,78 +128,49 @@ public class AnkiSend extends AppCompatActivity {
             }
         });
 
-        editTextPath.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
+        button.setOnClickListener(v -> {
+            String word = editTextFront.getText().toString();
+            String back = editTextBack.hasFocus() ? editTextBack.getText().toString() : meaning;
+            if (!word.contains("[sound:") || !PermissionChecker.doIHaveAnkiApiPermission(this)) {
+                sendNote(Tts.withoutSound(word), back);
+                saveSharedPreferences();
+                return;
             }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                loadedPath = s.toString();
-                checkIfPathExists(s.toString());
-            }
-        });
-
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String front = editTextFront.getText().toString();
-
-                List<NoteInfo> duplicates = null;
-                if (PermissionChecker.doIHaveAnkiApiPermission(AnkiSend.this)) {
-                    long id = getIdOfBasic() != null ? getIdOfBasic() : api.addNewBasicModel("basic");
-                    duplicates = api.findDuplicateNotes(id, front);
+            button.setEnabled(false);
+            mTTS.createMediaFile(word, file -> {
+                button.setEnabled(true);
+                if (file == null) {
+                    Toast.makeText(this, R.string.audio_export_failed, Toast.LENGTH_LONG).show();
+                    return;
                 }
-
-                String path = loadedPath;
-                if (loadedPath.length() > 0 && !loadedPath.substring(loadedPath.length() - 1).equals(File.separator)) {
-                    path += File.separator;
-                }
-                String externalPath = Environment.getExternalStorageDirectory().getPath() +
-                        File.separator;
-                String text = editTextFront.getText().toString();
-
-                if (checkIfPathExists(path)) {
-                    if (duplicates != null && duplicates.size() > 0) {
-                        for (NoteInfo info : duplicates) {
-                            if (info.getFields()[1].equals(meaning)) {
-                                Toast.makeText(AnkiSend.this, "Already exists", Toast.LENGTH_LONG).show();
-                                saveSharedPreferences();
-                                break;
-                            } else {
-                                mTTS.createMediaFile(externalPath + path, text);
-                                sendNote();
-                                saveSharedPreferences();
-                            }
-                        }
-                    } else {
-                        mTTS.createMediaFile(externalPath + path, text);
-                        sendNote();
-                        saveSharedPreferences();
+                Uri mediaUri = FileProvider.getUriForFile(this, getPackageName() + ".files", file);
+                try {
+                    String ankiPackage = AddContentApi.getAnkiDroidPackageName(this);
+                    if (ankiPackage == null) {
+                        throw new IllegalStateException("AnkiDroid unavailable");
                     }
-                } else
-                    Toast.makeText(AnkiSend.this, "Path if not valid!", Toast.LENGTH_LONG).show();
-            }
+                    grantUriPermission(ankiPackage, mediaUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    String media = api.addMediaFromUri(mediaUri, Tts.mediaName(word), "audio");
+                    if (media == null) {
+                        Toast.makeText(this, R.string.audio_export_failed, Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    sendNote(Tts.withoutSound(word) + " " + media, back);
+                    saveSharedPreferences();
+                } catch (RuntimeException e) {
+                    Toast.makeText(this, R.string.audio_export_failed, Toast.LENGTH_LONG).show();
+                } finally {
+                    revokeUriPermission(mediaUri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    file.delete();
+                }
+            });
         });
 
-        buTTS.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (PermissionChecker.doIHaveWritePermission(AnkiSend.this)) {
-                    if (spinnerVoice.getAdapter() != null) {
-                        String text = editTextFront.getText().toString().replaceAll(" \\[sound:.*\\]", "");
-                        mTTS.speak(text);
-                    } else
-                        Toast.makeText(AnkiSend.this, "Come on! Just give me some voice, please.",
-                                Toast.LENGTH_LONG).show();
-                } else
-                    PermissionChecker.checkWritePermission(AnkiSend.this);
+        buTTS.setOnClickListener(v -> {
+            if (spinnerVoice.getSelectedItem() != null) {
+                mTTS.speak(Tts.withoutSound(editTextFront.getText().toString()));
+            } else {
+                Toast.makeText(this, R.string.select_voice, Toast.LENGTH_LONG).show();
             }
         });
 
@@ -213,7 +179,7 @@ public class AnkiSend extends AppCompatActivity {
         Intent startEngine = new Intent();
         startEngine.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
         startEngine = startEngine.setPackage(loadedEngine);
-        startActivityForResult(startEngine, START_TTS_ENGINE);
+        checkTtsEngine(startEngine);
 
         PermissionChecker.checkAnkiApiPermission(AnkiSend.this);
         if (PermissionChecker.doIHaveAnkiApiPermission(AnkiSend.this)) {
@@ -222,16 +188,11 @@ public class AnkiSend extends AppCompatActivity {
         }
     }
 
-    private boolean checkIfPathExists(String path) {
-        String externalPath = Environment.getExternalStorageDirectory() + File.separator;
-        File f = new File(externalPath + path);
-        if (f.isDirectory() && new File(f.getParent() + File.separator + "collection.anki2").exists() &&
-                !path.substring(0, 1).equals(File.separator)) {
-            editTextPath.setBackgroundColor(Color.BLACK);
-            return true;
-        } else {
-            editTextPath.setBackgroundColor(Color.RED);
-            return false;
+    private void checkTtsEngine(Intent intent) {
+        try {
+            startActivityForResult(intent, START_TTS_ENGINE);
+        } catch (ActivityNotFoundException e) {
+            mTTS.initializeTTS(loadedEngine, () -> { mCallback(); return null; });
         }
     }
 
@@ -239,13 +200,18 @@ public class AnkiSend extends AppCompatActivity {
         Intent installIntent = new Intent();
         installIntent.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
         installIntent = installIntent.setPackage(spinnerEngine.getSelectedItem().toString());
-        startActivityForResult(installIntent, INSTALL_TTS_REQUEST_CODE);
+        try {
+            startActivityForResult(installIntent, INSTALL_TTS_REQUEST_CODE);
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(this, R.string.select_voice, Toast.LENGTH_LONG).show();
+        }
     }
 
     private void spinnerDeckFill() {
         List<String> decks = new ArrayList<>();
         Map<Long, String> deckList = api.getDeckList();
 
+        if (deckList == null) return;
         for (Map.Entry<Long, String> entry : deckList.entrySet()) {
             decks.add(entry.getValue());
         }
@@ -287,7 +253,7 @@ public class AnkiSend extends AppCompatActivity {
                     Intent startEngine = new Intent();
                     startEngine.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
                     startEngine = startEngine.setPackage(loadedEngine);
-                    startActivityForResult(startEngine, START_TTS_ENGINE);
+                    checkTtsEngine(startEngine);
                 } else {
                     spinnerLocaleFill();
                 }
@@ -418,14 +384,26 @@ public class AnkiSend extends AppCompatActivity {
         }
     }
 
-    private void sendNote() {
-        String word = editTextFront.getText().toString();
+    private void sendNote(String word, String back) {
         if (PermissionChecker.doIHaveAnkiApiPermission(AnkiSend.this)) {
+            if (spinnerDeck.getSelectedItem() == null) {
+                Toast.makeText(this, R.string.select_deck, Toast.LENGTH_LONG).show();
+                return;
+            }
             long deckId = getIdOfDeck() != null ? getIdOfDeck() :
                     api.addNewDeck(spinnerDeck.getSelectedItem().toString());
             long modelId = getIdOfBasic() != null ? getIdOfBasic() :
                     api.addNewBasicModel("basic");
-            Long err = api.addNote(modelId, deckId, new String[]{word, meaning}, null);
+            List<NoteInfo> duplicates = api.findDuplicateNotes(modelId, word);
+            if (duplicates != null) {
+                for (NoteInfo note : duplicates) {
+                    if (note.getFields().length > 1 && back.equals(note.getFields()[1])) {
+                        Toast.makeText(this, "Already exists", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                }
+            }
+            Long err = api.addNote(modelId, deckId, new String[]{word, back}, null);
             if (err != null)
                 Toast.makeText(AnkiSend.this, "Successfully added", Toast.LENGTH_LONG).show();
             else
@@ -434,7 +412,7 @@ public class AnkiSend extends AppCompatActivity {
             Intent shareIntent = ShareCompat.IntentBuilder.from(AnkiSend.this)
                     .setType("text/plain")
                     .setSubject(word)
-                    .setText(meaning)
+                    .setText(back)
                     .getIntent();
             if (shareIntent.resolveActivity(AnkiSend.this.getPackageManager()) != null) {
                 AnkiSend.this.startActivity(shareIntent);
@@ -448,21 +426,20 @@ public class AnkiSend extends AppCompatActivity {
         loadedLocale = sharedPreferences.getString(lang + TTS_LOCALE, "");
         loadedVoice = sharedPreferences.getString(lang + TTS_VOICE, "");
         loadedDeck = sharedPreferences.getString(lang + ANKI_DECK, "");
-        loadedPath = sharedPreferences.getString(lang + ANKI_PATH, "AnkiDroid/collection.media/");
-
-        editTextPath.setText(loadedPath);
     }
 
     private void saveSharedPreferences() {
         SharedPreferences sharedPreferences = getSharedPreferences(SHARED_PREFS, MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
 
-        editor.putString(lang + TTS_ENGINE, spinnerEngine.getSelectedItem().toString());
-        editor.putString(lang + TTS_LOCALE, spinnerLocale.getSelectedItem().toString());
-        editor.putString(lang + TTS_VOICE, spinnerVoice.getSelectedItem().toString());
-        editor.putString(lang + ANKI_DECK, spinnerDeck.getSelectedItem().toString());
-        if (checkIfPathExists(loadedPath))
-            editor.putString(lang + ANKI_PATH, editTextPath.getText().toString());
+        if (spinnerEngine.getSelectedItem() != null)
+            editor.putString(lang + TTS_ENGINE, spinnerEngine.getSelectedItem().toString());
+        if (spinnerLocale.getSelectedItem() != null)
+            editor.putString(lang + TTS_LOCALE, spinnerLocale.getSelectedItem().toString());
+        if (spinnerVoice.getSelectedItem() != null)
+            editor.putString(lang + TTS_VOICE, spinnerVoice.getSelectedItem().toString());
+        if (spinnerDeck.getSelectedItem() != null)
+            editor.putString(lang + ANKI_DECK, spinnerDeck.getSelectedItem().toString());
 
         editor.apply();
     }
@@ -503,6 +480,7 @@ public class AnkiSend extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == 0) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 spinnerDeck.setEnabled(true);
@@ -528,10 +506,14 @@ public class AnkiSend extends AppCompatActivity {
             }
 
         } else if (requestCode == START_TTS_ENGINE) {
+            if (data == null) {
+                mTTS.initializeTTS(loadedEngine, () -> { mCallback(); return null; });
+                return;
+            }
             ArrayList<String> availableLanguages =
                     data.getStringArrayListExtra(TextToSpeech.Engine.EXTRA_AVAILABLE_VOICES);
 
-            if (availableLanguages.isEmpty()) {
+            if (availableLanguages != null && availableLanguages.isEmpty()) {
                 installVoices();
             } else {
                 mTTS.initializeTTS(loadedEngine, new Callable<Void>() {
@@ -546,6 +528,7 @@ public class AnkiSend extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        mHandler.removeCallbacksAndMessages(null);
         mTTS.destroyTTS();
         super.onDestroy();
     }

@@ -51,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        WindowInsetsHelper.apply(this);
 
         Intent intent = getIntent();
         String action = intent.getAction();
@@ -158,10 +159,7 @@ public class MainActivity extends AppCompatActivity {
                     public boolean onMenuItemClick(MenuItem item) {
                         String language = item.getTitle().toString();
                         if (language.equals("add")) {
-                            if (PermissionChecker.doIHaveReadPermission(MainActivity.this))
-                                performFileSearch();
-                            else
-                                PermissionChecker.checkReadPermission(MainActivity.this);
+                            performFileSearch();
                         } else {
                             buLanguage.setText(language);
                             if (searchView.getQuery().toString().trim().length() == 0) {
@@ -244,6 +242,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == READ_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             if (data != null) {
                 uri = data.getData();

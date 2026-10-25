@@ -1,119 +1,136 @@
 package com.xeyqe.myapplication;
 
 import android.app.Activity;
-import android.content.Context;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.UtteranceProgressListener;
 import android.speech.tts.Voice;
-import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 public class Tts {
-    private Activity activity;
-    private Context context;
+    private final Activity activity;
     private TextToSpeech tts;
-    private File file;
+    private boolean ready;
 
     public Tts(Activity activity) {
         this.activity = activity;
-        this.context = activity;
     }
 
-
     public void initializeTTS(String ttsEngine, final Callable<Void> methodParam) {
-
-        if (tts != null) {
-            tts.stop();
-            tts.shutdown();
-        }
-        tts = new TextToSpeech(context, new TextToSpeech.OnInitListener() {
-            @Override
-            public void onInit(int status) {
-                if (status == TextToSpeech.SUCCESS) {
-
-                    tts.setSpeechRate(1);
-
-                    Button buTTS = activity.findViewById(R.id.buTTS);
-                    buTTS.setEnabled(true);
-                    tts.speak("", TextToSpeech.QUEUE_FLUSH, null, null);
-
-                    try {
-                        methodParam.call();
-
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+        destroyTTS();
+        tts = new TextToSpeech(activity, status -> {
+            ready = status == TextToSpeech.SUCCESS;
+            if (ready) {
+                tts.setSpeechRate(1);
+                Button button = activity.findViewById(R.id.buTTS);
+                button.setEnabled(true);
+                try {
+                    methodParam.call();
+                } catch (Exception e) {
+                    android.util.Log.e("Tts", "Could not initialize speech choices", e);
                 }
             }
         }, ttsEngine);
     }
 
-    public void createMediaFile(String path, String word) {
-        Pattern pattern = Pattern.compile("\\[sound:(.*?)\\]");
-        Matcher matcher = pattern.matcher(word);
-        if (matcher.find()) {
-            try {
-                String text = word.replaceAll(" \\[sound:.*\\.wav\\]", "");
+    public interface MediaCallback {
+        void onComplete(File file);
+    }
 
-                file = new File(path+matcher.group(1));
-                if (PermissionChecker.doIHaveWritePermission(activity)) {
+    public static String withoutSound(String word) {
+        return word.replaceAll("\\s*\\[sound:[^\\]]*\\]", "").trim();
+    }
 
-                    file.createNewFile();
-                    if (file.exists()) {
-                        tts.synthesizeToFile(text, null, new File(path + matcher.group(1)), null);
-                    }
-                } else {
-                    EditText editTextFront = activity.findViewById(R.id.editTextFront);
-                    editTextFront.setText(text);
-                }
-            } catch (IOException e){
-                Log.e("NWFILE", e.toString());
+    public static String mediaName(String word) {
+        Matcher marker = Pattern.compile("\\[sound:([^\\]]+)\\]").matcher(word);
+        String name = marker.find() ? marker.group(1) : "speech";
+        name = name.replaceAll("(?i)\\.wav$", "").replaceAll("[^\\p{L}\\p{N}_-]", "_");
+        return name.substring(0, Math.min(name.length(), 120));
+    }
+
+    public void createMediaFile(String word, MediaCallback callback) {
+        if (!ready || tts.getVoice() == null) {
+            callback.onComplete(null);
+            return;
+        }
+        final File file;
+        try {
+            File directory = new File(activity.getCacheDir(), "speech");
+            if (!directory.isDirectory() && !directory.mkdirs()) {
+                throw new IOException("Could not create speech cache");
             }
+            file = File.createTempFile("speech-", ".wav", directory);
+        } catch (IOException e) {
+            callback.onComplete(null);
+            return;
+        }
+        String utteranceId = file.getName();
+        AtomicBoolean completed = new AtomicBoolean();
+        MediaCallback finish = result -> {
+            if (!completed.compareAndSet(false, true)) return;
+            activity.runOnUiThread(() -> {
+                if (activity.isFinishing() || activity.isDestroyed()) {
+                    file.delete();
+                    return;
+                }
+                if (result == null) file.delete();
+                callback.onComplete(result);
+            });
+        };
+        tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+            @Override public void onStart(String id) { }
+            @Override public void onDone(String id) {
+                if (utteranceId.equals(id)) finish.onComplete(file.length() > 0 ? file : null);
+            }
+            @Override public void onError(String id) {
+                if (utteranceId.equals(id)) finish.onComplete(null);
+            }
+            @Override public void onStop(String id, boolean interrupted) {
+                if (utteranceId.equals(id)) finish.onComplete(null);
+            }
+        });
+        if (tts.synthesizeToFile(withoutSound(word), null, file, utteranceId) == TextToSpeech.ERROR) {
+            finish.onComplete(null);
         }
     }
 
     public void speak(String text) {
-        String filename = text.replaceAll(" ", "_") + ".wav";
-
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
-        EditText editTextFront = activity.findViewById(R.id.editTextFront);
-
-        String buttonText = text + " [sound:" + tts.getVoice().getName() + "_" + filename + "]";
-
-        editTextFront.setText(buttonText);
+        if (!ready || tts.getVoice() == null) return;
+        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "preview");
+        EditText front = activity.findViewById(R.id.editTextFront);
+        String name = (tts.getVoice().getName() + "_" + text).replaceAll("[^\\p{L}\\p{N}_-]", "_");
+        front.setText(text + " [sound:" + name + ".wav]");
     }
 
     public List<TextToSpeech.EngineInfo> listOfEngines() {
-        return tts.getEngines();
+        return tts == null ? Collections.emptyList() : tts.getEngines();
     }
 
     public Set<Voice> setOfVoices() {
-        Set<Voice> voices;
-        voices = tts.getVoices();
-        return voices;
-    }
-
-    public Voice getDefaultVoice() {
-        return tts.getDefaultVoice();
+        Set<Voice> voices = ready ? tts.getVoices() : null;
+        return voices == null ? Collections.emptySet() : voices;
     }
 
     public void setVoice(Voice voice) {
-        tts.setVoice(voice);
+        if (ready && voice != null) tts.setVoice(voice);
     }
 
     public void destroyTTS() {
+        ready = false;
         if (tts != null) {
             tts.stop();
             tts.shutdown();
+            tts = null;
         }
     }
 }
