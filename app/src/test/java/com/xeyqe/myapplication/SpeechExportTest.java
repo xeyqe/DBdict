@@ -17,5 +17,7 @@ public class SpeechExportTest {
         assertEquals("______voice", Tts.mediaName("hello [sound:../../voice.wav]"));
         assertEquals("český_hlas", Tts.mediaName("hello [sound:český hlas.wav]"));
         assertEquals("speech", Tts.mediaName("hello"));
+        assertEquals("voice_hello", Tts.mediaName("hello [sound:voice_hello.ogg]"));
+        assertEquals("voice_hello", Tts.mediaName("hello [sound:voice_hello.opus]"));
     }
 }
