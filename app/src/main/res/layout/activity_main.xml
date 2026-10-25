@@ -1,49 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" tools:context=".MainActivity">
 
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/dictionaryToolbar" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:minHeight="?attr/actionBarSize"
+        app:title="@string/app_name" app:subtitle="@string/dict_subtitle"
+        app:titleTextColor="@color/tts_text" app:subtitleTextColor="@color/tts_secondary"
+        app:menu="@menu/dictionary_toolbar" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/linear_layout">
-
-            <SearchView
-                android:id="@+id/search_view"
-                android:layout_width = "0dp"
-                android:layout_height = "wrap_content"
-                android:layout_weight = "1"
-                android:inputType="text"
-                android:iconifiedByDefault="true"
-                android:defaultFocusHighlightEnabled="true"
-                android:focusedByDefault="true"/>
-
-            <Button
-                android:id="@+id/buLanguage"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight = "0"
-                android:text="vsjo" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:paddingStart="@dimen/tts_page_inset"
+        android:paddingEnd="@dimen/tts_page_inset" android:paddingTop="12dp">
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            app:cardCornerRadius="16dp" app:cardElevation="0dp" app:strokeWidth="0dp"
+            app:cardBackgroundColor="@color/tts_surface">
+            <androidx.appcompat.widget.SearchView android:id="@+id/search_view"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:minHeight="60dp" android:inputType="text" android:imeOptions="actionSearch"
+                app:iconifiedByDefault="false" app:queryHint="@string/dict_search_hint"
+                app:queryBackground="@android:color/transparent" />
+        </com.google.android.material.card.MaterialCardView>
+        <TextView style="@style/TtsLabel" android:text="@string/dict_search_in"
+            android:labelFor="@id/buLanguage" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/buLanguage"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:minHeight="52dp" android:text="@string/dict_all" android:textAllCaps="false"
+            android:textSize="15sp" android:maxLines="2" android:gravity="start|center_vertical"
+            app:cornerRadius="12dp" app:icon="@drawable/ic_dictionary_expand" app:iconGravity="end" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:layout_marginTop="20dp" android:layout_marginBottom="10dp">
+            <TextView android:id="@+id/resultsTitle" style="@style/TtsSectionTitle"
+                android:layout_width="0dp" android:layout_weight="1" android:text="@string/dict_recent" />
+            <TextView android:id="@+id/resultsCount" style="@style/TtsSupporting"
+                android:layout_width="wrap_content" android:layout_marginStart="12dp"
+                android:accessibilityLiveRegion="polite" tools:text="12 words" />
         </LinearLayout>
+    </LinearLayout>
 
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_alignParentTop="true"
-            android:layout_marginTop="43dp"
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <androidx.recyclerview.widget.RecyclerView android:id="@+id/recycler_view"
+            android:layout_width="match_parent" android:layout_height="match_parent"
+            android:clipToPadding="false" android:paddingStart="@dimen/tts_page_inset"
+            android:paddingEnd="@dimen/tts_page_inset" android:paddingBottom="12dp"
             tools:listitem="@layout/vocab_item" />
-
-
-
-
-    </RelativeLayout>
-
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+        <LinearLayout android:id="@+id/dictionaryEmpty"
+            android:layout_width="match_parent" android:layout_height="match_parent"
+            android:gravity="center" android:orientation="vertical" android:padding="32dp"
+            android:visibility="gone" tools:visibility="visible">
+            <ImageView android:layout_width="72dp" android:layout_height="72dp"
+                android:padding="20dp" android:background="@drawable/dictionary_badge"
+                android:src="@drawable/ic_dictionary_book" app:tint="@color/tts_primary"
+                android:importantForAccessibility="no" android:layout_marginBottom="20dp" />
+            <TextView android:id="@+id/emptyTitle" style="@style/TtsSectionTitle"
+                android:gravity="center" android:text="@string/dict_empty_title" />
+            <TextView android:id="@+id/emptyDescription" style="@style/TtsSupporting"
+                android:layout_marginTop="8dp" android:gravity="center" android:text="@string/dict_empty_hint" />
+        </LinearLayout>
+    </FrameLayout>
+    <TextView style="@style/TtsSupporting" android:layout_marginStart="@dimen/tts_page_inset"
+        android:layout_marginEnd="@dimen/tts_page_inset" android:layout_marginBottom="12dp"
+        android:textSize="12sp" android:text="@string/dict_gesture_hint" />
+</LinearLayout>

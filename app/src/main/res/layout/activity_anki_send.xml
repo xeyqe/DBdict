@@ -1,193 +1,124 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fillViewport="true"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:background="@color/tts_background"
     tools:context=".AnkiSend">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_height="wrap_content"
-        android:layout_width="match_parent">
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/ttsToolbar" android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize" android:background="@color/tts_background"
+        app:title="@string/tts_screen_title" app:titleTextColor="@color/tts_text"
+        app:navigationIcon="@drawable/ic_tts_back" app:navigationIconTint="@color/tts_text"
+        app:navigationContentDescription="@string/tts_back" />
 
-        <LinearLayout
-            android:id="@+id/view_typeDeck"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"
+        android:fillViewport="true" android:clipToPadding="false">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:paddingStart="@dimen/tts_page_inset"
+            android:paddingEnd="@dimen/tts_page_inset" android:paddingBottom="16dp">
 
-            <TextView
-                android:id="@+id/textViewDeck"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="8dp"
-                android:text="Deck:"/>
-            <Spinner
-                android:id="@+id/spinnerDeck"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_margin="8dp"
-                android:enabled="false"/>
+            <TextView style="@style/TtsSupporting" android:layout_marginBottom="20dp"
+                android:text="@string/tts_screen_subtitle" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                app:cardCornerRadius="20dp" app:cardElevation="0dp" app:strokeWidth="0dp"
+                app:cardBackgroundColor="@color/tts_surface">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="20dp">
+                    <TextView style="@style/TtsSectionTitle" android:text="@string/tts_card_title" />
+                    <com.google.android.material.textfield.TextInputLayout style="@style/TtsTextInput"
+                        android:hint="@string/tts_front_label">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editTextFront" android:layout_width="match_parent"
+                            android:layout_height="wrap_content" android:minHeight="60dp" android:gravity="top|start"
+                            android:inputType="textCapSentences|textMultiLine" android:maxLines="4"
+                            android:textSize="20sp" android:importantForAutofill="no" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout style="@style/TtsTextInput"
+                        android:hint="@string/tts_back_label">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/editTextBack" android:layout_width="match_parent"
+                            android:layout_height="wrap_content" android:minLines="2" android:maxLines="6"
+                            android:gravity="top|start" android:inputType="textCapSentences|textMultiLine"
+                            android:textSize="16sp" android:importantForAutofill="no" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <TextView style="@style/TtsLabel" android:text="@string/tts_deck_label"
+                        android:labelFor="@id/spinnerDeck" />
+                    <androidx.appcompat.widget.AppCompatSpinner android:id="@+id/spinnerDeck"
+                        style="@style/TtsPicker" android:enabled="false" />
+                    <TextView android:id="@+id/deckStatus" style="@style/TtsSupporting"
+                        android:layout_marginTop="6dp" android:accessibilityLiveRegion="polite"
+                        tools:text="Your card will be added to this deck." />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/connectAnki"
+                        style="@style/TtsTextButton" android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" android:text="@string/anki_connect"
+                        android:layout_gravity="start" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="16dp" app:cardCornerRadius="20dp" app:cardElevation="0dp"
+                app:strokeWidth="0dp" app:cardBackgroundColor="@color/tts_surface">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="20dp">
+                    <TextView style="@style/TtsSectionTitle" android:text="@string/tts_speech_title" />
+                    <TextView style="@style/TtsSupporting" android:layout_marginTop="4dp"
+                        android:text="@string/tts_speech_subtitle" />
+                    <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/includeAudio"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp" android:minHeight="48dp" android:checked="true"
+                        android:text="@string/tts_include_audio" android:textColor="@color/tts_text"
+                        android:textSize="15sp" app:useMaterialThemeColors="true" />
+                    <TextView style="@style/TtsSupporting" android:text="@string/tts_include_hint" />
+                    <TextView android:id="@+id/speechStatus" style="@style/TtsSupporting"
+                        android:layout_marginTop="18dp" android:textColor="@color/tts_primary"
+                        android:accessibilityLiveRegion="polite" android:text="@string/tts_loading" />
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/ttsProgress" android:layout_width="match_parent"
+                        android:layout_height="wrap_content" android:layout_marginTop="8dp"
+                        android:indeterminate="true" app:indicatorColor="@color/tts_primary"
+                        app:trackColor="@color/tts_tint" app:trackCornerRadius="2dp" app:trackThickness="3dp" />
+                    <TextView style="@style/TtsLabel" android:text="@string/tts_engine_label"
+                        android:labelFor="@id/spinnerEngine" />
+                    <androidx.appcompat.widget.AppCompatSpinner android:id="@+id/spinnerEngine" style="@style/TtsPicker" />
+                    <TextView style="@style/TtsLabel" android:text="@string/tts_language_label"
+                        android:labelFor="@id/spinnerLocale" />
+                    <androidx.appcompat.widget.AppCompatSpinner android:id="@+id/spinnerLocale" style="@style/TtsPicker" />
+                    <TextView style="@style/TtsLabel" android:text="@string/tts_voice_label"
+                        android:labelFor="@id/spinnerVoice" />
+                    <androidx.appcompat.widget.AppCompatSpinner android:id="@+id/spinnerVoice" style="@style/TtsPicker" />
+                    <TextView android:id="@+id/voiceHint" style="@style/TtsSupporting"
+                        android:layout_marginTop="6dp" android:text="@string/voice_initial_hint" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/buTTS"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp" android:minHeight="52dp" android:enabled="false"
+                        android:text="@string/tts_preview" android:textAllCaps="false" app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_tts_volume" app:iconGravity="textStart" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="vertical" android:gravity="end">
+                        <com.google.android.material.button.MaterialButton android:id="@+id/retrySpeech"
+                            style="@style/TtsTextButton" android:layout_width="match_parent"
+                            android:layout_height="wrap_content" android:text="@string/tts_retry"
+                            android:visibility="gone" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/installVoices"
+                            style="@style/TtsTextButton" android:layout_width="match_parent"
+                            android:layout_height="wrap_content" android:text="@string/tts_manage_voices" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
-        <TextView
-            android:id="@+id/textViewFront"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="8dp"
-            android:text="Front"
-            app:layout_constraintBottom_toTopOf="@+id/editTextFront"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/view_typeDeck" />
-
-        <EditText
-            android:id="@+id/editTextFront"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            android:ems="10"
-            android:background="@android:color/black"
-            android:inputType="textMultiLine"
-            app:layout_constraintBottom_toTopOf="@+id/textViewBack"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textViewFront" />
-
-        <TextView
-            android:id="@+id/textViewBack"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginBottom="8dp"
-            android:text="Back"
-            app:layout_constraintBottom_toTopOf="@+id/editTextBack"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/editTextFront" />
-
-        <EditText
-            android:id="@+id/editTextBack"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
-            android:ems="10"
-            android:inputType="textMultiLine"
-            android:background="@android:color/black"
-            app:layout_constraintBottom_toTopOf="@+id/button"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.0"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textViewBack" />
-
-        <Button
-            android:id="@+id/button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            android:text="send to ankidroid"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/editTextBack" />
-
-        <Button
-            android:id="@+id/buTTS"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="8dp"
-            android:enabled="false"
-            android:text="create media"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="0.5"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/button" />
-
-        <LinearLayout
-            android:id="@+id/view_type"
-            app:layout_constraintTop_toBottomOf="@id/buTTS"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toTopOf="@+id/view_type2">
-
-            <TextView
-            android:id="@+id/textViewEngine"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="8dp"
-            android:text="Engine:"/>
-        <Spinner
-            android:id="@+id/spinnerEngine"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_margin="8dp"/>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/view_type2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toTopOf="@+id/view_type3">
-
-            <TextView
-                android:id="@+id/textViewLocale"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="8dp"
-                android:text="Locale:" />
-
-
-            <Spinner
-                android:id="@+id/spinnerLocale"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_margin="8dp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/view_type3"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent">
-
-            <TextView
-                android:id="@+id/textViewVoice"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_margin="8dp"
-                android:text="Voice: "/>
-
-            <Spinner
-                android:id="@+id/spinnerVoice"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_margin="8dp"/>
-        </LinearLayout>
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</ScrollView>
+    <com.google.android.material.button.MaterialButton android:id="@+id/button"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/tts_page_inset" android:layout_marginEnd="@dimen/tts_page_inset"
+        android:layout_marginTop="8dp" android:layout_marginBottom="12dp" android:minHeight="56dp"
+        android:text="@string/anki_add" android:textAllCaps="false" android:textSize="16sp" android:maxLines="2"
+        app:cornerRadius="16dp" app:icon="@drawable/ic_tts_add" app:iconGravity="textStart" />
+</LinearLayout>

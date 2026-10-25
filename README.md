@@ -37,3 +37,17 @@ so it can be retried.
 
 Audio export, speech engines, and keyboard/layout behavior still need device
 testing on Android 10 and Android 17.
+
+The flashcard screen separates card content and pronunciation settings, supports
+light/dark themes, and provides an audio toggle and a separate voice preview.
+Speech engines initialize directly with a 10-second timeout. Switching engines
+invalidates old callbacks; a failed preferred engine falls back to the system
+default. Missing engines/voices show a retry action and voice management rather
+than launching setup automatically. Language preferences use locale tags, and
+voice choices indicate whether a network connection is needed.
+
+The dictionary search screen, result cards, and import/removal dialogs use the
+same Material light/dark theme as the flashcard screen. The search filter uses
+“All dictionaries” for the unfiltered search, while an empty query shows recent
+lookups. Add dictionaries from the toolbar or filter menu; remove the selected
+dictionary from the toolbar menu or by long-pressing the filter.

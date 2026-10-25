@@ -1,0 +1,12 @@
+<resources>
+    <color name="tts_background">#111C1B</color>
+    <color name="tts_surface">#1B2927</color>
+    <color name="tts_primary">#9BD3C5</color>
+    <color name="tts_on_primary">#07392F</color>
+    <color name="tts_tint">#2D4540</color>
+    <color name="tts_text">#E0EBE7</color>
+    <color name="tts_secondary">#B0C2BC</color>
+    <color name="tts_outline">#4A6059</color>
+    <color name="tts_error">#F2B8B5</color>
+    <bool name="tts_light_bars">false</bool>
+</resources>

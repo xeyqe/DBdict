@@ -1,0 +1,65 @@
+<resources>
+    <style name="TtsTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/tts_primary</item>
+        <item name="colorPrimaryVariant">@color/tts_primary</item>
+        <item name="colorOnPrimary">@color/tts_on_primary</item>
+        <item name="colorSecondary">@color/tts_primary</item>
+        <item name="colorSurface">@color/tts_surface</item>
+        <item name="colorOnSurface">@color/tts_text</item>
+        <item name="colorError">@color/tts_error</item>
+        <item name="android:colorBackground">@color/tts_background</item>
+        <item name="android:windowLightStatusBar">@bool/tts_light_bars</item>
+        <item name="android:windowLightNavigationBar">@bool/tts_light_bars</item>
+        <item name="android:windowBackground">@color/tts_background</item>
+        <item name="android:fontFamily">sans</item>
+    </style>
+    <style name="TtsSectionTitle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textColor">@color/tts_text</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:accessibilityHeading">true</item>
+    </style>
+    <style name="TtsLabel">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">18dp</item>
+        <item name="android:layout_marginBottom">6dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/tts_secondary</item>
+    </style>
+    <style name="TtsSupporting">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/tts_secondary</item>
+        <item name="android:lineSpacingExtra">3dp</item>
+    </style>
+    <style name="TtsPicker" parent="Widget.AppCompat.Spinner.Underlined">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">56dp</item>
+        <item name="android:popupBackground">@color/tts_surface</item>
+        <item name="android:backgroundTint">@color/tts_outline</item>
+        <item name="android:spinnerMode">dropdown</item>
+        <item name="android:saveEnabled">false</item>
+    </style>
+    <style name="TtsTextInput" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">18dp</item>
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
+    </style>
+    <style name="TtsTextButton" parent="Widget.MaterialComponents.Button.TextButton">
+        <item name="android:minHeight">48dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+    <bool name="tts_light_bars">true</bool>
+    <dimen name="tts_page_inset">20dp</dimen>
+</resources>

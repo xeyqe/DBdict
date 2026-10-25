@@ -3,19 +3,17 @@ package com.xeyqe.myapplication;
 import android.app.Activity;
 import android.media.AudioFormat;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.speech.tts.Voice;
-import android.widget.Button;
-import android.widget.EditText;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -27,28 +25,55 @@ public class Tts {
     private final Activity activity;
     private TextToSpeech tts;
     private boolean ready;
+    private final EngineConnection<TextToSpeech> connection;
     private volatile ExportSession exportSession;
     private final ExecutorService audioEncoder = Executors.newSingleThreadExecutor();
 
     public Tts(Activity activity) {
         this.activity = activity;
+        Handler handler = new Handler(Looper.getMainLooper());
+        connection = new EngineConnection<>(new EngineConnection.Factory<TextToSpeech>() {
+            @Override public TextToSpeech create(String name, EngineConnection.Result result) {
+                return new TextToSpeech(activity.getApplicationContext(),
+                        status -> result.complete(status == TextToSpeech.SUCCESS), name);
+            }
+            @Override public void shutdown(TextToSpeech engine) {
+                engine.stop();
+                engine.shutdown();
+            }
+        }, new EngineConnection.Scheduler() {
+            @Override public void post(Runnable action) { handler.post(action); }
+            @Override public void postDelayed(Runnable action, long delay) { handler.postDelayed(action, delay); }
+            @Override public void remove(Runnable action) { handler.removeCallbacks(action); }
+        });
     }
 
-    public void initializeTTS(String ttsEngine, final Callable<Void> methodParam) {
+    public interface InitializationCallback {
+        void onReady(Set<Voice> voices, Voice defaultVoice);
+        void onFailure();
+    }
+
+    public void initializeTTS(String engine, InitializationCallback callback) {
         releaseEngine();
-        tts = new TextToSpeech(activity, status -> {
-            ready = status == TextToSpeech.SUCCESS;
-            if (ready) {
-                tts.setSpeechRate(1);
-                Button button = activity.findViewById(R.id.buTTS);
-                button.setEnabled(true);
+        connection.connect(engine, new EngineConnection.Listener<TextToSpeech>() {
+            @Override public void onReady(TextToSpeech connected) {
+                tts = connected;
                 try {
-                    methodParam.call();
-                } catch (Exception e) {
-                    android.util.Log.e("Tts", "Could not initialize speech choices", e);
+                    if (tts.setSpeechRate(1) == TextToSpeech.ERROR) throw new IllegalStateException();
+                    ready = true;
+                    Set<Voice> voices = tts.getVoices();
+                    callback.onReady(voices == null ? Collections.emptySet() : voices, tts.getDefaultVoice());
+                } catch (RuntimeException error) {
+                    releaseEngine();
+                    callback.onFailure();
                 }
             }
-        }, ttsEngine);
+            @Override public void onFailure() {
+                ready = false;
+                tts = null;
+                callback.onFailure();
+            }
+        });
     }
 
     public interface MediaCallback {
@@ -173,25 +198,18 @@ public class Tts {
         }
     }
 
-    public void speak(String text) {
-        if (!ready || tts.getVoice() == null) return;
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "preview");
-        EditText front = activity.findViewById(R.id.editTextFront);
-        String name = (tts.getVoice().getName() + "_" + text).replaceAll("[^\\p{L}\\p{N}_-]", "_");
-        front.setText(text + " [sound:" + name + ".ogg]");
+    public boolean speak(String text) {
+        return ready && tts.getVoice() != null
+                && tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "preview") == TextToSpeech.SUCCESS;
     }
 
-    public List<TextToSpeech.EngineInfo> listOfEngines() {
-        return tts == null ? Collections.emptyList() : tts.getEngines();
+    public boolean setVoice(Voice voice) {
+        return ready && voice != null && tts.setVoice(voice) == TextToSpeech.SUCCESS;
     }
 
-    public Set<Voice> setOfVoices() {
-        Set<Voice> voices = ready ? tts.getVoices() : null;
-        return voices == null ? Collections.emptySet() : voices;
-    }
-
-    public void setVoice(Voice voice) {
-        if (ready && voice != null) tts.setVoice(voice);
+    public String audioMediaName(String text) {
+        String voice = ready && tts.getVoice() != null ? tts.getVoice().getName() : "speech";
+        return mediaName(text + " [sound:" + voice + "_" + text + ".ogg]");
     }
 
     public void destroyTTS() {
@@ -202,10 +220,7 @@ public class Tts {
     private void releaseEngine() {
         ready = false;
         if (exportSession != null) exportSession.cancel();
-        if (tts != null) {
-            tts.stop();
-            tts.shutdown();
-            tts = null;
-        }
+        connection.close();
+        tts = null;
     }
 }

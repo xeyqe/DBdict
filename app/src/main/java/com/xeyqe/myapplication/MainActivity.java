@@ -1,337 +1,282 @@
 package com.xeyqe.myapplication;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import androidx.lifecycle.Observer;
-
-import android.content.DialogInterface;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.recyclerview.widget.ItemTouchHelper;
-
 import android.os.Handler;
-import android.view.MenuItem;
+import android.os.Looper;
+import android.provider.OpenableColumns;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.PopupMenu;
-import android.widget.SearchView;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.PopupMenu;
+import androidx.appcompat.widget.SearchView;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputLayout;
+
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-
 
 public class MainActivity extends AppCompatActivity {
     private static final VocabAdapter adapter = new VocabAdapter();
     private static final int READ_REQUEST_CODE = 42;
-    public static String mLng = "germanstina";
-    private String language2Delete;
-    private EditText languages;
-    private Uri uri;
-    private PopupMenu popupMenu3;
+    private final Handler timeout = new Handler(Looper.getMainLooper());
+    private final List<String> dictionaries = new ArrayList<>();
     private VocabRepository repository;
-    private Handler timeout = new Handler();
-    private String searchText;
+    private SearchView search;
+    private MaterialButton dictionaryButton;
+    private MaterialToolbar toolbar;
+    private PopupMenu dictionaryMenu;
+    private View emptyState;
+    private TextView resultsTitle, resultsCount, emptyTitle, emptyDescription;
+    private String selectedDictionary = "";
+    private String importLanguage = "";
+    private final RecyclerView.AdapterDataObserver resultsObserver = new RecyclerView.AdapterDataObserver() {
+        @Override public void onChanged() { renderResults(); }
+    };
 
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    @Override protected void onCreate(Bundle state) {
+        super.onCreate(state);
         setContentView(R.layout.activity_main);
         WindowInsetsHelper.apply(this);
-
-        Intent intent = getIntent();
-        String action = intent.getAction();
-        String type = intent.getType();
-        final Button buLanguage = findViewById(R.id.buLanguage);
-
-        RecyclerView recyclerView = findViewById(R.id.recycler_view);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setHasFixedSize(true);
-
-        final SearchView searchView = findViewById(R.id.search_view);
-
-        recyclerView.setAdapter(adapter);
-
-        popupMenu3 = new PopupMenu(MainActivity.this, buLanguage);
-
-        repository = new VocabRepository(this.getApplication());
-        repository.getAllLanguages().observe(this, new Observer<List<String>>() {
-            @Override
-            public void onChanged(List<String> strings) {
-                popupMenu3.getMenu().clear();
-                popupMenu3.getMenu().add(0, 0,0,"vsjo");
-
-                for (int i=1; i<strings.size()+1; i++) {
-                    popupMenu3.getMenu().add(0, i,0,strings.get(i-1));
-                }
-
-                popupMenu3.getMenu().add(0, strings.size()+1,0,"add");
+        repository = new VocabRepository(getApplication());
+        search = findViewById(R.id.search_view);
+        dictionaryButton = findViewById(R.id.buLanguage);
+        toolbar = findViewById(R.id.dictionaryToolbar);
+        emptyState = findViewById(R.id.dictionaryEmpty);
+        resultsTitle = findViewById(R.id.resultsTitle);
+        resultsCount = findViewById(R.id.resultsCount);
+        emptyTitle = findViewById(R.id.emptyTitle);
+        emptyDescription = findViewById(R.id.emptyDescription);
+        RecyclerView recycler = findViewById(R.id.recycler_view);
+        recycler.setLayoutManager(new LinearLayoutManager(this));
+        recycler.setAdapter(adapter);
+        adapter.registerAdapterDataObserver(resultsObserver);
+        if (state != null) selectedDictionary = state.getString("dictionary", "");
+        dictionaryMenu = new PopupMenu(this, dictionaryButton);
+        dictionaryMenu.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_import_dictionary) performFileSearch();
+            else {
+                int index = item.getItemId() - 1;
+                selectedDictionary = index >= 0 && index < dictionaries.size() ? dictionaries.get(index) : "";
+                renderDictionary();
+                reload();
             }
+            return true;
         });
-
-        if (Intent.ACTION_SEND.equals(action) && type != null) {
-            if ("text/plain".equals(type)) {
-                String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
-                if (sharedText != null) {
-                    searchView.setQuery(sharedText.trim(),true);
-                }
+        dictionaryButton.setOnClickListener(v -> dictionaryMenu.show());
+        dictionaryButton.setOnLongClickListener(v -> {
+            confirmRemoval();
+            return true;
+        });
+        toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_import_dictionary) performFileSearch();
+            else if (item.getItemId() == R.id.action_delete_dictionary) confirmRemoval();
+            return true;
+        });
+        repository.getAllLanguages().observe(this, names -> {
+            dictionaries.clear();
+            if (names != null) dictionaries.addAll(names);
+            dictionaryMenu.getMenu().clear();
+            dictionaryMenu.getMenu().add(0, 0, 0, R.string.dict_all);
+            for (int i = 0; i < dictionaries.size(); i++) {
+                dictionaryMenu.getMenu().add(1, i + 1, i + 1, dictionaries.get(i));
             }
-        }
-
-        searchView.setIconified(false);
-
-        if (searchView.getQuery().toString().trim().length() == 0) {
-            database();
-        } else
-            database(searchView.getQuery().toString(),buLanguage.getText().toString());
-
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                return false;
+            dictionaryMenu.getMenu().add(2, R.id.action_import_dictionary, dictionaries.size() + 1, R.string.dict_import);
+            if (!selectedDictionary.isEmpty() && !dictionaries.contains(selectedDictionary)) {
+                selectedDictionary = "";
+                reload();
             }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                searchText = newText;
-
-                Runnable mRunnable = new Runnable() {
-                    @Override
-                    public void run() {
-                        if (searchText.trim().length() == 0) {
-                    database();
-                } else {
-                    String language = buLanguage.getText().toString();
-                            database(searchText, language);
-                }
-                    }
-                };
+            renderDictionary();
+        });
+        search.setIconified(false);
+        search.setMaxWidth(Integer.MAX_VALUE);
+        search.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override public boolean onQueryTextSubmit(String query) {
                 timeout.removeCallbacksAndMessages(null);
-                timeout.postDelayed(mRunnable, 250);
-
+                reload();
+                search.clearFocus();
+                return true;
+            }
+            @Override public boolean onQueryTextChange(String query) {
+                timeout.removeCallbacksAndMessages(null);
+                timeout.postDelayed(MainActivity.this::reload, 250);
                 return true;
             }
         });
-
-        adapter.setOnClickListener(new VocabAdapter.OnItemClickListener() {
-            @Override
-            public void onItemClick(Vocab vocab) {
-                Intent intent = new Intent(MainActivity.this, AnkiSend.class);
-                intent.putExtra(AnkiSend.EXTRA_WORD, vocab.getWord());
-                intent.putExtra(AnkiSend.EXTRA_MEANING, vocab.getMeaning());
-                intent.putExtra(AnkiSend.EXTRA_LANGUAGE, vocab.getLanguage());
-
-                if (!vocab.getHistory()) {
-                    String word = vocab.getWord();
-                    String meaning = vocab.getMeaning();
-                    String language = vocab.getLanguage();
-                    int id = vocab.getId();
-                    Vocab vocabUpdated = new Vocab(word, meaning, language, true);
-                    vocabUpdated.setId(id);
-                    repository.update(vocabUpdated);
-                }
-
-                MainActivity.this.startActivityForResult(intent, 1);
-            }
+        String initialQuery = state == null ? sharedText(getIntent()) : state.getString("query", "");
+        search.setQuery(initialQuery, false);
+        search.clearFocus();
+        renderDictionary();
+        renderResults();
+        reload();
+        adapter.setOnClickListener(vocab -> {
+            if (!vocab.getHistory()) updateHistory(vocab, true);
+            startActivity(new Intent(this, AnkiSend.class)
+                    .putExtra(AnkiSend.EXTRA_WORD, vocab.getWord())
+                    .putExtra(AnkiSend.EXTRA_MEANING, vocab.getMeaning())
+                    .putExtra(AnkiSend.EXTRA_LANGUAGE, vocab.getLanguage()));
         });
-
-
-        buLanguage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                popupMenu3.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-                    @Override
-                    public boolean onMenuItemClick(MenuItem item) {
-                        String language = item.getTitle().toString();
-                        if (language.equals("add")) {
-                            performFileSearch();
-                        } else {
-                            buLanguage.setText(language);
-                            if (searchView.getQuery().toString().trim().length() == 0) {
-                                database();
-                            } else {
-                                database(searchView.getQuery().toString(), language);
-                            }
-                        }
-                        return true;
-                    }
-                });
-                popupMenu3.show();
+        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT | ItemTouchHelper.LEFT) {
+            @Override public boolean onMove(@NonNull RecyclerView view, @NonNull RecyclerView.ViewHolder source,
+                                             @NonNull RecyclerView.ViewHolder target) { return false; }
+            @Override public void onSwiped(@NonNull RecyclerView.ViewHolder holder, int direction) {
+                int position = holder.getBindingAdapterPosition();
+                if (position == RecyclerView.NO_POSITION || position >= adapter.getItemCount()) return;
+                Vocab vocab = adapter.getVocabAt(position);
+                updateHistory(vocab, !vocab.getHistory());
+                reload();
             }
-        });
-
-        buLanguage.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                language2Delete = buLanguage.getText().toString();
-                if (!language2Delete.equals("vsjo")) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-
-                    builder.setMessage("Do you want to delete " + language2Delete + " dictionary?")
-                            .setPositiveButton("ok", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    repository.deleteAllVocabs(language2Delete);
-                                    buLanguage.setText("vsjo");
-                                }
-                            })
-                            .setNegativeButton("cancel", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-
-                                }
-                            });
-                    builder.show();
-                }
-
-                return true;
-            }
-        });
-
-        new ItemTouchHelper(new ItemTouchHelper.SimpleCallback(0,
-                ItemTouchHelper.RIGHT | ItemTouchHelper.LEFT) {
-            @Override
-            public boolean onMove(@NonNull RecyclerView recyclerView,
-                                  @NonNull RecyclerView.ViewHolder viewHolder,
-                                  @NonNull RecyclerView.ViewHolder viewHolder1) {
-                return false;
-            }
-
-            @Override
-            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
-                Vocab vocab = adapter.getVocabAt(viewHolder.getAdapterPosition());
-                String word = vocab.getWord();
-                String meaning = vocab.getMeaning();
-                String language = vocab.getLanguage();
-                Boolean history = vocab.getHistory();
-                int id = vocab.getId();
-                Vocab vocabUpdated = new Vocab(word, meaning, language, !history);
-                vocabUpdated.setId(id);
-                repository.update(vocabUpdated);
-                String str = searchView.getQuery().toString();
-                if (str.isEmpty())
-                    database();
-                else
-                    database(str, buLanguage.getText().toString());
-            }
-        }).attachToRecyclerView(recyclerView);
+        }).attachToRecyclerView(recycler);
     }
 
+    private void updateHistory(Vocab vocab, boolean recent) {
+        Vocab updated = new Vocab(vocab.getWord(), vocab.getMeaning(), vocab.getLanguage(), recent);
+        updated.setId(vocab.getId());
+        repository.update(updated);
+    }
+
+    private void reload() {
+        if (search.getQuery().toString().trim().isEmpty()) repository.getAllVocabs();
+        else repository.getAllSearchedVocabs(search.getQuery().toString() + "%",
+                selectedDictionary.isEmpty() ? "%" : selectedDictionary);
+    }
+
+    private void renderDictionary() {
+        dictionaryButton.setText(selectedDictionary.isEmpty() ? getString(R.string.dict_all) : selectedDictionary);
+        toolbar.getMenu().findItem(R.id.action_delete_dictionary).setVisible(!selectedDictionary.isEmpty());
+    }
+
+    private void renderResults() {
+        boolean searching = !search.getQuery().toString().trim().isEmpty();
+        int count = adapter.getItemCount();
+        resultsTitle.setText(searching ? R.string.dict_matches : R.string.dict_recent);
+        resultsCount.setText(getResources().getQuantityString(R.plurals.dict_word_count, count, count));
+        emptyState.setVisibility(count == 0 ? View.VISIBLE : View.GONE);
+        emptyTitle.setText(searching ? R.string.dict_no_results_title : R.string.dict_empty_title);
+        emptyDescription.setText(searching ? R.string.dict_no_results_hint : R.string.dict_empty_hint);
+    }
+
+    private void confirmRemoval() {
+        if (selectedDictionary.isEmpty()) return;
+        String dictionary = selectedDictionary;
+        new MaterialAlertDialogBuilder(this).setTitle(R.string.dict_remove_title)
+                .setMessage(getString(R.string.dict_remove_message, dictionary))
+                .setNegativeButton(R.string.action_cancel, null)
+                .setPositiveButton(R.string.dict_remove_action, (dialog, which) -> {
+                    repository.deleteAllVocabs(dictionary);
+                    selectedDictionary = "";
+                    renderDictionary();
+                    reload();
+                }).show();
+    }
 
     public void performFileSearch() {
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("text/*");
-        startActivityForResult(intent, READ_REQUEST_CODE);
+        try {
+            startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT)
+                    .addCategory(Intent.CATEGORY_OPENABLE).setType("text/*"), READ_REQUEST_CODE);
+        } catch (ActivityNotFoundException error) {
+            Toast.makeText(this, R.string.dict_picker_unavailable, Toast.LENGTH_LONG).show();
+        }
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == READ_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            if (data != null) {
-                uri = data.getData();
-
-                final AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
-                View mView = getLayoutInflater().inflate(R.layout.layout_dialog, null);
-                languages = mView.findViewById(R.id.edit_view_lang);
-                dialog.setView(mView)
-                        .setTitle("Languages")
-                        .setNegativeButton("cancel", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-
-                            }
-                        })
-                        .setPositiveButton("ok", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-
-                                String language = languages.getText().toString();
-
-                                mLng = language;
-                                readTextFile(uri);
-                            }
-                        });
-                dialog.show();
-                String path = uri.getPath();
-                String filename = path.substring(path.lastIndexOf(File.separator)+1);
-                if (filename.indexOf(".") > 0)
-                    filename = filename.substring(0, filename.lastIndexOf("."));
-                languages.setText(filename);
+    @Override protected void onActivityResult(int request, int result, @Nullable Intent data) {
+        super.onActivityResult(request, result, data);
+        if (request != READ_REQUEST_CODE || result != Activity.RESULT_OK || data == null || data.getData() == null) return;
+        Uri uri = data.getData();
+        View content = getLayoutInflater().inflate(R.layout.layout_dialog, null);
+        EditText name = content.findViewById(R.id.edit_view_lang);
+        TextInputLayout input = content.findViewById(R.id.dictionaryNameInput);
+        name.setText(dictionaryName(uri));
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this).setTitle(R.string.dict_import)
+                .setView(content).setNegativeButton(R.string.action_cancel, null)
+                .setPositiveButton(R.string.dict_import_action, null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String dictionary = name.getText().toString().trim();
+            if (dictionary.isEmpty()) {
+                input.setError(getString(R.string.dict_name_required));
+                return;
             }
-        }
+            importLanguage = dictionary;
+            dialog.dismiss();
+            readTextFile(uri);
+        }));
+        dialog.show();
+    }
+
+    private String dictionaryName(Uri uri) {
+        String filename = null;
+        try (Cursor cursor = getContentResolver().query(uri, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) filename = cursor.getString(0);
+        } catch (RuntimeException ignored) { }
+        if (filename == null || filename.trim().isEmpty()) return getString(R.string.dict_default_name);
+        int extension = filename.lastIndexOf('.');
+        return extension > 0 ? filename.substring(0, extension) : filename;
     }
 
     public void readTextFile(Uri uri) {
-
-        ArrayList<Vocab> listOfVocabs = new ArrayList<>();
-
-        InputStream inputStream = null;
-        try {
-            inputStream = getContentResolver().openInputStream(uri);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-
-        try {
-            String line = reader.readLine();
-            while (line != null) {
-                if (!line.startsWith("##") && line.contains("\t")) {
-                    String[] separated = line.split("\t");
-                    if (separated.length == 2)
-                        listOfVocabs.add(new Vocab(separated[0], separated[1]
-                                .replaceAll("\\\\n", "<br>"), mLng, false));
-                }
-                line = reader.readLine();
-            }
-            if (listOfVocabs.size() == 0)
-                Toast.makeText(this, "Wrong input. I want word and meaning divided by tab.",
-                        Toast.LENGTH_LONG).show();
-            else
-                repository.insertAll(listOfVocabs);
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
+        ArrayList<Vocab> vocabs = new ArrayList<>();
+        try (InputStream stream = getContentResolver().openInputStream(uri)) {
+            if (stream == null) throw new IOException("Document unavailable");
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.startsWith("##")) continue;
+                    String[] entry = line.split("\t");
+                    if (entry.length == 2) vocabs.add(new Vocab(entry[0], entry[1].replace("\\n", "<br>"), importLanguage, false));
                 }
             }
+            if (vocabs.isEmpty()) Toast.makeText(this, R.string.dict_import_invalid, Toast.LENGTH_LONG).show();
+            else {
+                repository.insertAll(vocabs);
+                Toast.makeText(this, getResources().getQuantityString(R.plurals.dict_import_started,
+                        vocabs.size(), vocabs.size()), Toast.LENGTH_LONG).show();
+            }
+        } catch (IOException | SecurityException error) {
+            Toast.makeText(this, R.string.dict_import_failed, Toast.LENGTH_LONG).show();
         }
     }
 
-    private void database() {
-        repository.getAllVocabs();
+    private static String sharedText(Intent intent) {
+        if (Intent.ACTION_SEND.equals(intent.getAction()) && "text/plain".equals(intent.getType())) {
+            String text = intent.getStringExtra(Intent.EXTRA_TEXT);
+            if (text != null) return text.trim();
+        }
+        return "";
     }
 
-    private void database(String word, String language) {
-        if (language.equals("vsjo"))
-            language = "%";
-        word += "%";
-        repository.getAllSearchedVocabs(word, language);
+    @Override protected void onSaveInstanceState(@NonNull Bundle state) {
+        state.putString("dictionary", selectedDictionary);
+        state.putString("query", search.getQuery().toString());
+        super.onSaveInstanceState(state);
     }
 
-    public static void updateAdapter(List<Vocab> vocabs) {
-        adapter.setVocabs(vocabs);
+    @Override protected void onDestroy() {
+        timeout.removeCallbacksAndMessages(null);
+        adapter.unregisterAdapterDataObserver(resultsObserver);
+        adapter.setOnClickListener(null);
+        super.onDestroy();
     }
 
+    public static void updateAdapter(List<Vocab> vocabs) { adapter.setVocabs(vocabs); }
 }

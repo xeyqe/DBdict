@@ -3,4 +3,13 @@
     <color name="colorPrimary">#008577</color>
     <color name="colorPrimaryDark">#444040</color>
     <color name="colorAccent">#FF0000</color>
+    <color name="tts_background">#F3F6F6</color>
+    <color name="tts_surface">#FFFFFF</color>
+    <color name="tts_primary">#146D64</color>
+    <color name="tts_on_primary">#FFFFFF</color>
+    <color name="tts_tint">#E1EFEB</color>
+    <color name="tts_text">#192D2B</color>
+    <color name="tts_secondary">#5D6E6B</color>
+    <color name="tts_outline">#D5DFDD</color>
+    <color name="tts_error">#B3261E</color>
 </resources>

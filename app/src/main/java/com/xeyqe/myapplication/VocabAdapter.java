@@ -27,7 +27,7 @@ public class VocabAdapter extends RecyclerView.Adapter<VocabAdapter.VocabHolder>
     public void onBindViewHolder(@NonNull VocabHolder holder, int position) {
         Vocab currentVocab = vocabs.get(position);
         holder.textViewWord.setText(currentVocab.getWord());
-        holder.textViewMeaning.setText(Html.fromHtml(currentVocab.getMeaning()));
+        holder.textViewMeaning.setText(Html.fromHtml(currentVocab.getMeaning(), Html.FROM_HTML_MODE_LEGACY));
         holder.textViewLanguage.setText(currentVocab.getLanguage());
     }
 
@@ -59,8 +59,8 @@ public class VocabAdapter extends RecyclerView.Adapter<VocabAdapter.VocabHolder>
             itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    int position = getAdapterPosition();
-                    if (listener != null) {
+                    int position = getBindingAdapterPosition();
+                    if (listener != null && position != RecyclerView.NO_POSITION && position < vocabs.size()) {
                         listener.onItemClick(vocabs.get(position));
                     }
                 }
