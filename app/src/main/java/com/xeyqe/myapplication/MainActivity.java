@@ -29,11 +29,6 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputLayout;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private View emptyState;
     private TextView resultsTitle, resultsCount, emptyTitle, emptyDescription;
     private String selectedDictionary = "";
-    private String importLanguage = "";
+    private String renamingFrom, renamingTo;
     private final RecyclerView.AdapterDataObserver resultsObserver = new RecyclerView.AdapterDataObserver() {
         @Override public void onChanged() { renderResults(); }
     };
@@ -75,13 +70,10 @@ public class MainActivity extends AppCompatActivity {
         if (state != null) selectedDictionary = state.getString("dictionary", "");
         dictionaryMenu = new PopupMenu(this, dictionaryButton);
         dictionaryMenu.setOnMenuItemClickListener(item -> {
-            if (item.getItemId() == R.id.action_import_dictionary) performFileSearch();
-            else {
-                int index = item.getItemId() - 1;
-                selectedDictionary = index >= 0 && index < dictionaries.size() ? dictionaries.get(index) : "";
-                renderDictionary();
-                reload();
-            }
+            int index = item.getItemId() - 1;
+            selectedDictionary = index >= 0 && index < dictionaries.size() ? dictionaries.get(index) : "";
+            renderDictionary();
+            reload();
             return true;
         });
         dictionaryButton.setOnClickListener(v -> dictionaryMenu.show());
@@ -92,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
         toolbar.setOnMenuItemClickListener(item -> {
             if (item.getItemId() == R.id.action_import_dictionary) performFileSearch();
             else if (item.getItemId() == R.id.action_delete_dictionary) confirmRemoval();
+            else if (item.getItemId() == R.id.action_rename_dictionary) renameDictionary();
             return true;
         });
         repository.getAllLanguages().observe(this, names -> {
@@ -102,7 +95,10 @@ public class MainActivity extends AppCompatActivity {
             for (int i = 0; i < dictionaries.size(); i++) {
                 dictionaryMenu.getMenu().add(1, i + 1, i + 1, dictionaries.get(i));
             }
-            dictionaryMenu.getMenu().add(2, R.id.action_import_dictionary, dictionaries.size() + 1, R.string.dict_import);
+            if (selectedDictionary.equals(renamingFrom)) {
+                if (dictionaries.contains(renamingTo)) selectedDictionary = renamingTo;
+                else if (!dictionaries.contains(renamingFrom)) selectedDictionary = "";
+            }
             if (!selectedDictionary.isEmpty() && !dictionaries.contains(selectedDictionary)) {
                 selectedDictionary = "";
                 reload();
@@ -159,12 +155,13 @@ public class MainActivity extends AppCompatActivity {
     private void reload() {
         if (search.getQuery().toString().trim().isEmpty()) repository.getAllVocabs();
         else repository.getAllSearchedVocabs(search.getQuery().toString() + "%",
-                selectedDictionary.isEmpty() ? "%" : selectedDictionary);
+                selectedDictionary.isEmpty() ? null : selectedDictionary);
     }
 
     private void renderDictionary() {
         dictionaryButton.setText(selectedDictionary.isEmpty() ? getString(R.string.dict_all) : selectedDictionary);
         toolbar.getMenu().findItem(R.id.action_delete_dictionary).setVisible(!selectedDictionary.isEmpty());
+        toolbar.getMenu().findItem(R.id.action_rename_dictionary).setVisible(!selectedDictionary.isEmpty());
     }
 
     private void renderResults() {
@@ -191,10 +188,68 @@ public class MainActivity extends AppCompatActivity {
                 }).show();
     }
 
+    private void renameDictionary() {
+        if (selectedDictionary.isEmpty()) return;
+        String oldName = selectedDictionary;
+        View content = getLayoutInflater().inflate(R.layout.layout_dialog, null);
+        ((TextView) content.findViewById(R.id.dictionaryNameHint)).setText(R.string.dict_rename_hint);
+        content.findViewById(R.id.dictionaryFormatHint).setVisibility(View.GONE);
+        EditText name = content.findViewById(R.id.edit_view_lang);
+        TextInputLayout input = content.findViewById(R.id.dictionaryNameInput);
+        name.setText(oldName);
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this).setTitle(R.string.dict_rename_title)
+                .setView(content).setNegativeButton(R.string.action_cancel, null)
+                .setPositiveButton(R.string.dict_rename_action, null).create();
+        dialog.setOnShowListener(ignored -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String newName = name.getText().toString().trim();
+            if (newName.isEmpty()) {
+                input.setError(getString(R.string.dict_name_required));
+                return;
+            }
+            if (newName.equals(oldName)) {
+                dialog.dismiss();
+                return;
+            }
+            if (dictionaries.contains(newName)) {
+                input.setError(getString(R.string.dict_name_exists));
+                return;
+            }
+            renamingFrom = oldName;
+            renamingTo = newName;
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+            dialog.setCancelable(false);
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setEnabled(false);
+            repository.renameDictionary(oldName, newName, result -> {
+                if (isFinishing() || isDestroyed()) return;
+                renamingFrom = null;
+                renamingTo = null;
+                if (result > 0) {
+                    if (selectedDictionary.equals(oldName)) selectedDictionary = newName;
+                    dialog.dismiss();
+                    renderDictionary();
+                    reload();
+                } else {
+                    dialog.setCancelable(true);
+                    dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setEnabled(true);
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                    input.setError(getString(result == -1 ? R.string.dict_name_exists : R.string.dict_rename_failed));
+                }
+            });
+        }));
+        dialog.show();
+    }
+
     public void performFileSearch() {
         try {
             startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT)
-                    .addCategory(Intent.CATEGORY_OPENABLE).setType("text/*"), READ_REQUEST_CODE);
+                    .addCategory(Intent.CATEGORY_OPENABLE).setType("*/*")
+                    .putExtra(Intent.EXTRA_MIME_TYPES, new String[]{
+                            "text/plain",
+                            "text/tab-separated-values",
+                            "application/gzip",
+                            "application/x-gzip",
+                            "application/x-compressed-tar"
+                    }), READ_REQUEST_CODE);
         } catch (ActivityNotFoundException error) {
             Toast.makeText(this, R.string.dict_picker_unavailable, Toast.LENGTH_LONG).show();
         }
@@ -217,9 +272,8 @@ public class MainActivity extends AppCompatActivity {
                 input.setError(getString(R.string.dict_name_required));
                 return;
             }
-            importLanguage = dictionary;
             dialog.dismiss();
-            readTextFile(uri);
+            importDictionary(uri, dictionary);
         }));
         dialog.show();
     }
@@ -230,31 +284,23 @@ public class MainActivity extends AppCompatActivity {
             if (cursor != null && cursor.moveToFirst()) filename = cursor.getString(0);
         } catch (RuntimeException ignored) { }
         if (filename == null || filename.trim().isEmpty()) return getString(R.string.dict_default_name);
+        if (filename.endsWith(".tar.gz")) return filename.substring(0, filename.length() - 7);
         int extension = filename.lastIndexOf('.');
         return extension > 0 ? filename.substring(0, extension) : filename;
     }
 
-    public void readTextFile(Uri uri) {
-        ArrayList<Vocab> vocabs = new ArrayList<>();
-        try (InputStream stream = getContentResolver().openInputStream(uri)) {
-            if (stream == null) throw new IOException("Document unavailable");
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (line.startsWith("##")) continue;
-                    String[] entry = line.split("\t");
-                    if (entry.length == 2) vocabs.add(new Vocab(entry[0], entry[1].replace("\\n", "<br>"), importLanguage, false));
-                }
+    private void importDictionary(Uri uri, String dictionary) {
+        Toast.makeText(this, R.string.dict_import_working, Toast.LENGTH_LONG).show();
+        repository.importDictionary(uri, dictionary, count -> {
+            if (isFinishing() || isDestroyed()) return;
+            if (count < 0) {
+                Toast.makeText(this, R.string.dict_import_failed, Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(this, getResources().getQuantityString(R.plurals.dict_import_finished,
+                        count, count), Toast.LENGTH_LONG).show();
+                reload();
             }
-            if (vocabs.isEmpty()) Toast.makeText(this, R.string.dict_import_invalid, Toast.LENGTH_LONG).show();
-            else {
-                repository.insertAll(vocabs);
-                Toast.makeText(this, getResources().getQuantityString(R.plurals.dict_import_started,
-                        vocabs.size(), vocabs.size()), Toast.LENGTH_LONG).show();
-            }
-        } catch (IOException | SecurityException error) {
-            Toast.makeText(this, R.string.dict_import_failed, Toast.LENGTH_LONG).show();
-        }
+        });
     }
 
     private static String sharedText(Intent intent) {

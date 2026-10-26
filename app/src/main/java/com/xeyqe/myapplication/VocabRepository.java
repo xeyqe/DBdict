@@ -2,19 +2,77 @@ package com.xeyqe.myapplication;
 
 import android.app.Application;
 import android.os.AsyncTask;
+import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.function.IntConsumer;
 
 import androidx.lifecycle.LiveData;
 
 import java.util.List;
 
 public class VocabRepository {
+    private static final ExecutorService IMPORTS = Executors.newSingleThreadExecutor();
+    private final Application application;
+    private final VocabDatabase database;
     private VocabDao vocabDao;
     private LiveData<List<String>> getAllLanguages;
 
     public VocabRepository(Application application) {
-        VocabDatabase database = VocabDatabase.getInstance(application);
+        this.application = application;
+        database = VocabDatabase.getInstance(application);
         vocabDao = database.vocabDao();
         getAllLanguages = vocabDao.getAllLanguages();
+    }
+
+    /** Parse and insert in a single transaction so failed imports leave no partial dictionaries. */
+    public void importDictionary(Uri uri, String name, IntConsumer completion) {
+        IMPORTS.execute(() -> {
+            int[] count = {0};
+            try (InputStream input = application.getContentResolver().openInputStream(uri)) {
+                if (input == null) throw new IOException("Document unavailable");
+                database.runInTransaction(() -> {
+                    List<Vocab> batch = new ArrayList<>(500);
+                    try {
+                        count[0] = DictionaryImporter.read(input, application.getCacheDir(), name,
+                                (word, meaning, dictionary) -> {
+                                    batch.add(new Vocab(word, meaning, dictionary, false));
+                                    if (batch.size() == 500) {
+                                        vocabDao.insertAll(batch);
+                                        batch.clear();
+                                    }
+                                });
+                        if (!batch.isEmpty()) vocabDao.insertAll(batch);
+                    } catch (IOException error) {
+                        throw new UncheckedIOException(error);
+                    }
+                });
+            } catch (IOException | RuntimeException error) {
+                count[0] = -1;
+            }
+            int result = count[0];
+            new Handler(Looper.getMainLooper()).post(() -> completion.accept(result));
+        });
+    }
+
+    public void renameDictionary(String oldName, String newName, IntConsumer completion) {
+        IMPORTS.execute(() -> {
+            int result;
+            try {
+                result = vocabDao.renameDictionary(oldName, newName);
+            } catch (RuntimeException error) {
+                result = 0;
+            }
+            int renamed = result;
+            new Handler(Looper.getMainLooper()).post(() -> completion.accept(renamed));
+        });
     }
 
     public void insertAll(List<Vocab> vocabs) {

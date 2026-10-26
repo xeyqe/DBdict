@@ -63,13 +63,19 @@
     <string name="dict_import">Add dictionary</string>
     <string name="dict_import_hint">Give your dictionary a name so you can find it in the search filter.</string>
     <string name="dict_import_name">Dictionary name</string>
-    <string name="dict_import_format">Use a UTF-8 text file with one word and meaning per line, separated by a tab.</string>
+    <string name="dict_import_format">Choose a StarDict archive (.tar.gz or .tgz), or UTF-8 text with a word and meaning separated by a tab on each line. Archives with multiple dictionaries add a filter for each one.</string>
     <string name="dict_import_action">Import</string>
     <string name="dict_name_required">Enter a name for this dictionary.</string>
-    <string name="dict_import_invalid">No entries found. Use a word and meaning separated by a tab on each line.</string>
-    <string name="dict_import_failed">Could not read this dictionary. Try selecting the file again.</string>
+    <string name="dict_import_working">Importing dictionary… You can keep searching.</string>
+    <string name="dict_import_failed">Could not import this dictionary. Choose a valid UTF-8 tab-separated file or a supported StarDict archive.</string>
     <string name="dict_picker_unavailable">No document picker is available on this device.</string>
     <string name="dict_default_name">My dictionary</string>
+    <string name="dict_rename_selected">Rename selected dictionary</string>
+    <string name="dict_rename_title">Rename dictionary</string>
+    <string name="dict_rename_action">Rename</string>
+    <string name="dict_rename_hint">Choose a new name for this dictionary.</string>
+    <string name="dict_name_exists">A dictionary with this name already exists.</string>
+    <string name="dict_rename_failed">Could not rename this dictionary. Try again.</string>
     <string name="dict_remove_selected">Remove selected dictionary</string>
     <string name="dict_remove_title">Remove dictionary?</string>
     <string name="dict_remove_message">Remove “%1$s” and its words from this device?</string>
@@ -78,8 +84,8 @@
     <plurals name="dict_word_count">
         <item quantity="one">%d word</item><item quantity="other">%d words</item>
     </plurals>
-    <plurals name="dict_import_started">
-        <item quantity="one">Adding %d entry to your dictionary.</item>
-        <item quantity="other">Adding %d entries to your dictionary.</item>
+    <plurals name="dict_import_finished">
+        <item quantity="one">Imported %d entry.</item>
+        <item quantity="other">Imported %d entries.</item>
     </plurals>
 </resources>

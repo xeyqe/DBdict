@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
     <item android:id="@+id/action_import_dictionary" android:title="@string/dict_import"
-        android:icon="@drawable/ic_tts_add" app:iconTint="@color/tts_primary" app:showAsAction="ifRoom" />
+        android:icon="@drawable/ic_tts_add" app:iconTint="@color/tts_primary" app:showAsAction="always" />
+    <item android:id="@+id/action_rename_dictionary" android:title="@string/dict_rename_selected"
+        android:visible="false" app:showAsAction="never" />
     <item android:id="@+id/action_delete_dictionary" android:title="@string/dict_remove_selected"
         android:visible="false" app:showAsAction="never" />
 </menu>

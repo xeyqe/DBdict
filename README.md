@@ -1,7 +1,11 @@
 # DBdict
 [English-czech](https://www.svobodneslovniky.cz/) offline dictionary for android. 
-<br>You can add more dictionaries, but it has to be plaintext divided by tab
-<br>If you want to use diffferent format, you have to export it first \(e.g. by [pyglossary](https://github.com/ilius/pyglossary)\).
+<br>Add dictionaries with the top-right **+** button using the system file picker. Supported files:
+
+- UTF-8 text with one word and meaning per line, separated by a tab. LF, CRLF, and CR line endings and an initial UTF-8 BOM are accepted. Blank lines and `##` comments are ignored. Invalid rows reject the whole import. Meanings support HTML formatting and literal `\n` for line breaks; additional tabs remain part of the meaning.
+- StarDict `.tar.gz` / `.tgz` archives containing matching `.ifo`, `.idx` (or `.idx.gz`), and `.dict` (or `.dict.dz`) files. Archives containing both translation directions import each as a separate dictionary filter, using the name you enter plus its book name.
+
+StarDict versions 2.4.2 and 3.0.0, 32/64-bit offsets, and text/Pango/HTML/phonetic fields (`m`, `g`, `h`, `t`, `y`) are supported. Other definition types are rejected. Imports run in the background and commit only when the whole file is valid. Limits: 512 MiB per text file and of archive data, 2 GiB per expanded dictionary, 1 MiB per StarDict definition and 1,048,576 UTF-16 code units per text line, and one million entries. For other formats, export to tab-separated text first (for example with [pyglossary](https://github.com/ilius/pyglossary)).
 <br>You can send vocabulary to ankidroid.
 <br>If you select text and tab share you can select DBdict to search.
 
@@ -15,7 +19,7 @@ The checked-in wrapper uses Gradle 9.6.0 with Android Gradle Plugin 9.4.1.
 ./gradlew assembleDebug testDebugUnitTest lintDebug assembleDebugAndroidTest
 ```
 
-The debug APK is written to `app/build/outputs/apk/debug/app-debug.apk`.
+The debug APK is written to `app/build/outputs/apk/debug/DBdict.apk`.
 Run `./gradlew connectedDebugAndroidTest` with a device or emulator attached
 to execute the instrumented tests.
 
@@ -49,5 +53,7 @@ voice choices indicate whether a network connection is needed.
 The dictionary search screen, result cards, and import/removal dialogs use the
 same Material light/dark theme as the flashcard screen. The search filter uses
 “All dictionaries” for the unfiltered search, while an empty query shows recent
-lookups. Add dictionaries from the toolbar or filter menu; remove the selected
-dictionary from the toolbar menu or by long-pressing the filter.
+lookups. Add dictionaries with the top-right **+** button. Select a dictionary in the
+filter, then use **Rename selected dictionary** or **Remove selected dictionary**
+in the toolbar menu. Long-pressing the filter also offers removal. Renaming
+preserves entries and recent lookups; existing dictionary names cannot be reused.
